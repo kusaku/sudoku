@@ -41,6 +41,11 @@ class Entry(set):
 
 
 class Uniques(list):
+    def check(self):
+        c = Counter(chain(*self))
+        r = all(v == 1 for v in c.values())
+        return r
+
     def single(self):
         changed = False
         c = Counter(chain(*self))
@@ -74,7 +79,7 @@ class Col(Uniques):
         return tabulate([[r] for r in self], tablefmt="plain")
 
 
-class Sector(Uniques):
+class Sec(Uniques):
     def __str__(self):
         return tabulate([[self[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="plain")
 
@@ -95,12 +100,10 @@ class Board(list):
     def col(self, num):
         return Col(r[num] for r in self)
 
-    def sector(self, row, col):
-        l = []
-        for r in range(row * 3, (row + 1) * 3):
-            for c in range(col * 3, (col + 1) * 3):
-                l.append(self[r][c])
-        return Sector(l)
+    def sec(self, num):
+        row = num // 3
+        col = num % 3
+        return Sec(self[r][c] for r in range(row * 3, (row + 1) * 3) for c in range(col * 3, (col + 1) * 3))
 
     def flat(self):
         return [self[r][c] for c in range(9) for r in range(9)]
@@ -109,22 +112,22 @@ class Board(list):
         changed = True
         while changed:
             changed = False
-            for row in range(9):
-                changed = self.row(row).single() or changed
-                changed = self.row(row).unique() or changed
-            for col in range(9):
-                changed = self.col(col).single() or changed
-                changed = self.col(col).unique() or changed
-            for row in range(3):
-                for col in range(3):
-                    changed = self.sector(row, col).single() or changed
-                    changed = self.sector(row, col).unique() or changed
+            for num in range(9):
+                changed = self.sec(num).single() or changed
+                changed = self.sec(num).unique() or changed
+                changed = self.row(num).single() or changed
+                changed = self.row(num).unique() or changed
+                changed = self.col(num).single() or changed
+                changed = self.col(num).unique() or changed
 
     def solved(self):
         return all(e.ready for e in self.flat())
 
     def failed(self):
         return any(e.empty for e in self.flat())
+
+    def check(self):
+        return all(self.row(num).check() and self.col(num).check() and self.sec(num).check() for num in range(9))
 
 
 def fill_test_board(q, b):
@@ -152,7 +155,7 @@ iii = 0
 
 def randomize_board(b):
     global iii
-    s = b.sector((iii//3)%3, iii%3)
+    s = b.sec((iii // 3) % 3, iii % 3)
     e = random.choice(s)
     v = random.choice(list(e))
     e.difference_update(e - {v})
@@ -176,9 +179,14 @@ if __name__ == '__main__':
         [0, 0, 0, 0, 1, 9, 0, 0, 4],
         [0, 0, 3, 2, 0, 0, 0, 9, 0],
     ]
+
     fill_test_board(q, b)
 
+    print(b.check())
+
     b.solve()
+
+    print(b.check())
 
     # while not (b.solved() or b.failed()):
     #     randomize_board(b)
