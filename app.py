@@ -1,5 +1,5 @@
 import random
-from collections import Counter
+from collections import Counter, defaultdict
 from itertools import chain
 
 from tabulate import tabulate
@@ -54,6 +54,29 @@ class Uniques(list):
                 for e in self:
                     if v in e:
                         e.difference_update(e - {v})
+
+        if flag:
+            self.double()
+
+        return changed
+
+    def double(self):
+        changed = False
+        d = defaultdict(set)
+        for v in chain(*self):
+            for i, e in enumerate(self):
+                if v in e:
+                    d[v].add(i)
+
+        id = defaultdict(set)
+
+        for k, v in d.items():
+            id[tuple(sorted(v))].add(k)
+
+        for k, v in id.items():
+            if len(k) > 1 and len(k) == len(v):
+                ...
+
         return changed
 
     def unique(self):
@@ -131,6 +154,7 @@ class Board(list):
 
 
 def fill_test_board(q, b):
+    print(sum(bool(e) for r in q for e in r))
     for r in range(9):
         for c in range(9):
             if q[r][c]:
@@ -153,6 +177,7 @@ q = [
 
 iii = 0
 
+
 def randomize_board(b):
     global iii
     s = b.sec((iii // 3) % 3, iii % 3)
@@ -162,6 +187,8 @@ def randomize_board(b):
     q[e.row][e.col] = v
     iii += 1
 
+
+flag = False
 
 if __name__ == '__main__':
     # e = [entry(k) for k in range(1, 10)]
@@ -182,7 +209,11 @@ if __name__ == '__main__':
 
     fill_test_board(q, b)
 
-    print(b.check())
+    # print(b.check())
+
+    b.solve()
+
+    flag = True
 
     b.solve()
 
@@ -192,10 +223,8 @@ if __name__ == '__main__':
     #     randomize_board(b)
     #     b.solve()
 
-    print(sum(bool(e) for r in q for e in r))
-
     c = Board()
 
     fill_test_board(q, c)
 
-    print(tabulate([[str(c), '-->' ,str(b)]], tablefmt="plain"))
+    print(tabulate([[str(c), '-->\n' * 27, str(b)]], tablefmt="plain"))
