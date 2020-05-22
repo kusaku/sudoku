@@ -77,7 +77,6 @@ class Uniques(list):
                         changed = True
         return changed
 
-
     def intersect(self, other):
         changed = False
         a = set(self)
@@ -208,11 +207,10 @@ flag = False
 
 if __name__ == '__main__':
 
-
     q = [
         [0, 4, 0, 0, 0, 2, 6, 0, 0],
         [8, 0, 0, 9, 3, 0, 0, 0, 0],
-        [0, 0, 0, 8, 0, 0, 0, 0, 0],
+        [0, 0, 0, 8, 0, 1, 0, 0, 0],
         [0, 6, 9, 0, 0, 0, 7, 0, 1],
         [4, 0, 0, 0, 0, 0, 0, 0, 2],
         [7, 0, 8, 0, 0, 0, 5, 4, 0],
@@ -234,7 +232,6 @@ if __name__ == '__main__':
     # print()
     # print(b.sec(6))
     # print(b.row(7))
-
 
     # # while not b.solved():
     # #     randomize_board(b)
