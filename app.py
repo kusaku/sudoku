@@ -76,7 +76,13 @@ class Uniques(list):
         for v, count in c.items():
             d[count][v] = set(e for e in self if v in e)
         for count, vs in d.items():
-            if count == len(vs):
+            if count == 1:
+                for v, es in vs.items():
+                    for e in es:
+                        if not e.ready:
+                            e.difference_update(e - {v})
+                            changed = True
+            elif count == len(vs):
                 a = reduce(operator.or_, vs.values())
                 b = reduce(operator.and_, vs.values())
                 c = set(chain(*a))
