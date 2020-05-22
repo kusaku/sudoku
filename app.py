@@ -173,22 +173,19 @@ def fill_test_board(q, b):
 
 used = set((r, c) for c in range(3) for r in range(3))
 
-iii = 0
-
 
 def randomize_board(b):
-    global iii
-    s = b.sec(iii % 7 + 1)
+    n = random.choice([0,  2, 3,  5, 6, 7, 8])
+    s = b.row(n)
     e = random.choice(s)
     v = random.choice(list(e))
     e.difference_update(e - {v})
     q[e.row][e.col] = v
-    iii += 1
 
 
 def simplify_q(q):
-    for r in range(9):
-        for c in range(9):
+    for r in range(8, -1, -1):
+        for c in range(8, -1, -1):
             v = q[r][c]
             if v == 0:
                 continue
@@ -208,37 +205,25 @@ flag = False
 if __name__ == '__main__':
 
     q = [
-        [0, 4, 0, 0, 0, 2, 6, 0, 0],
-        [8, 0, 0, 9, 3, 0, 0, 0, 0],
-        [0, 0, 0, 8, 0, 1, 0, 0, 0],
-        [0, 6, 9, 0, 0, 0, 7, 0, 1],
-        [4, 0, 0, 0, 0, 0, 0, 0, 2],
-        [7, 0, 8, 0, 0, 0, 5, 4, 0],
-        [0, 0, 0, 6, 0, 7, 0, 0, 0],
-        [0, 0, 0, 0, 1, 9, 0, 0, 4],
-        [0, 0, 3, 2, 0, 0, 0, 9, 0],
+        [0, 3, 8, 0, 0, 7, 0, 0, 0],
+        [0, 0, 0, 0, 0, 1, 0, 5, 0],
+        [7, 0, 0, 0, 4, 0, 0, 8, 6],
+        [0, 9, 5, 0, 0, 8, 0, 2, 0],
+        [0, 0, 3, 0, 0, 0, 9, 0, 0],
+        [0, 7, 0, 4, 0, 0, 5, 1, 0],
+        [5, 6, 0, 0, 8, 0, 0, 0, 9],
+        [0, 2, 0, 5, 0, 0, 0, 0, 0],
+        [0, 0, 0, 9, 0, 0, 2, 4, 0],
     ]
 
     b = Board()
     fill_test_board(q, b)
     b.solve()
 
-    # print()
-    # print(b.sec(6))
-    # print(b.row(7))
-    #
-    # b.sec(6).intersect(b.row(7))
-    #
-    # print()
-    # print(b.sec(6))
-    # print(b.row(7))
+    # while not b.solved():
+    #     randomize_board(b)
+    #     b.solve()
 
-    # # while not b.solved():
-    # #     randomize_board(b)
-    # #     b.solve()
-    #
-    # b.solve()
-    #
     # simplify_q(q)
 
     e = Board()
@@ -247,3 +232,5 @@ if __name__ == '__main__':
     print()
     print(b.solved(), b.check())
     print(tabulate([[str(e), '-->\n' * 27, str(b)]], tablefmt="plain"))
+
+    print(repr(''.join(map(str, chain(*q))).replace('0', ' ')))
