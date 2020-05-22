@@ -1,5 +1,7 @@
+import operator
 import random
-from collections import Counter
+from collections import Counter, defaultdict
+from functools import reduce
 from itertools import chain
 
 from tabulate import tabulate
@@ -33,7 +35,7 @@ class Entry(set):
         if self.ready:
             s += '╔═══╗\n║ %d ║\n╚═══╝' % next(iter(self))
         elif self.empty:
-            s = 'XXX\nXXX\nXXX'
+            s = 'X X X\nX X X\nX X X'
         else:
             # s = '...\n...\n...'
             for i in range(1, 10):
@@ -55,17 +57,7 @@ class Uniques(list):
         r = all(v == 1 for v in c.values())
         return r
 
-    def naked_single(self):
-        changed = False
-        c = Counter(chain(*self))
-        for v, count in c.items():
-            if count == 1:
-                for e in self:
-                    if v in e:
-                        e.difference_update(e - {v})
-        return changed
-
-    def hidden_single(self):
+    def naked_tuples(self):
         changed = False
         c = Counter(map(tuple, self))
         for v, count in c.items():
@@ -74,6 +66,23 @@ class Uniques(list):
                 for e in self:
                     if e != s and s.issubset(e):
                         e.difference_update(s)
+                        changed = True
+        return changed
+
+    def hidden_tuples(self):
+        changed = False
+        c = Counter(chain(*self))
+        d = defaultdict(dict)
+        for v, count in c.items():
+            d[count][v] = set(e for e in self if v in e)
+        for count, vs in d.items():
+            if count == len(vs):
+                a = reduce(operator.or_, vs.values())
+                b = reduce(operator.and_, vs.values())
+                c = set(chain(*a))
+                if c != vs.keys() and a == b:
+                    for e in a:
+                        e.difference_update(e - vs.keys())
                         changed = True
         return changed
 
@@ -138,13 +147,12 @@ class Board(list):
         while changed:
             changed = False
             for num in range(9):
-                pass
-                changed = self.sec(num).naked_single() or changed
-                changed = self.sec(num).hidden_single() or changed
-                changed = self.row(num).naked_single() or changed
-                changed = self.row(num).hidden_single() or changed
-                changed = self.col(num).naked_single() or changed
-                changed = self.col(num).hidden_single() or changed
+                changed = self.sec(num).naked_tuples() or changed
+                changed = self.sec(num).hidden_tuples() or changed
+                changed = self.row(num).naked_tuples() or changed
+                changed = self.row(num).hidden_tuples() or changed
+                changed = self.col(num).naked_tuples() or changed
+                changed = self.col(num).hidden_tuples() or changed
 
             for s in range(9):
                 sec = self.sec(s)
