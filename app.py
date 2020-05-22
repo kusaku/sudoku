@@ -1,5 +1,5 @@
 import random
-from collections import Counter, defaultdict
+from collections import Counter
 from itertools import chain
 
 from tabulate import tabulate
@@ -22,13 +22,20 @@ class Entry(set):
     def empty(self):
         return len(self) == 0
 
+    def __hash__(self):
+        return hash((self.row, self.col))
+
+    def __eq__(self, other):
+        return self.row, self.col == other.row, other.col
+
     def __str__(self):
         s = ''
         if self.ready:
-            s += '╔═╗\n║%d║\n╚═╝' % next(iter(self))
+            s += '╔═══╗\n║ %d ║\n╚═══╝' % next(iter(self))
         elif self.empty:
             s = 'XXX\nXXX\nXXX'
         else:
+            # s = '...\n...\n...'
             for i in range(1, 10):
                 if i in self:
                     s += str(i)
@@ -36,6 +43,8 @@ class Entry(set):
                     s += '.'
                 if i in {3, 6, 9}:
                     s += '\n'
+                else:
+                    s += ' '
 
         return s
 
@@ -46,7 +55,7 @@ class Uniques(list):
         r = all(v == 1 for v in c.values())
         return r
 
-    def single(self):
+    def naked_single(self):
         changed = False
         c = Counter(chain(*self))
         for v, count in c.items():
@@ -54,32 +63,9 @@ class Uniques(list):
                 for e in self:
                     if v in e:
                         e.difference_update(e - {v})
-
-        if flag:
-            self.double()
-
         return changed
 
-    def double(self):
-        changed = False
-        d = defaultdict(set)
-        for v in chain(*self):
-            for i, e in enumerate(self):
-                if v in e:
-                    d[v].add(i)
-
-        id = defaultdict(set)
-
-        for k, v in d.items():
-            id[tuple(sorted(v))].add(k)
-
-        for k, v in id.items():
-            if len(k) > 1 and len(k) == len(v):
-                ...
-
-        return changed
-
-    def unique(self):
+    def hidden_single(self):
         changed = False
         c = Counter(map(tuple, self))
         for v, count in c.items():
@@ -92,19 +78,36 @@ class Uniques(list):
         return changed
 
 
+    def intersect(self, other):
+        changed = False
+        a = set(self)
+        b = set(other)
+        for v in set(chain(*(a & b))):
+            c = {e for e in a | b if v in e}
+            if c & a == c & a & b:
+                for e in c - a:
+                    e.difference_update({v})
+                    changed = True
+            if c & b == c & a & b:
+                for e in c - b:
+                    e.difference_update({v})
+                    changed = True
+        return changed
+
+
 class Row(Uniques):
     def __str__(self):
-        return tabulate([self], tablefmt="plain")
+        return tabulate([self], tablefmt="orgtbl")
 
 
 class Col(Uniques):
     def __str__(self):
-        return tabulate([[r] for r in self], tablefmt="plain")
+        return tabulate([[r] for r in self], tablefmt="orgtbl")
 
 
 class Sec(Uniques):
     def __str__(self):
-        return tabulate([[self[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="plain")
+        return tabulate([[self[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="orgtbl")
 
 
 class Board(list):
@@ -112,7 +115,7 @@ class Board(list):
         super().__init__([[Entry(row, col) for col in range(9)] for row in range(9)])
 
     def __str__(self):
-        return tabulate(self, tablefmt="plain")
+        return tabulate(self, tablefmt="orgtbl")
 
     def update(self, row, col, value):
         self[row][col] = Entry(row, col, value)
@@ -136,12 +139,20 @@ class Board(list):
         while changed:
             changed = False
             for num in range(9):
-                changed = self.sec(num).single() or changed
-                changed = self.sec(num).unique() or changed
-                changed = self.row(num).single() or changed
-                changed = self.row(num).unique() or changed
-                changed = self.col(num).single() or changed
-                changed = self.col(num).unique() or changed
+                pass
+                changed = self.sec(num).naked_single() or changed
+                changed = self.sec(num).hidden_single() or changed
+                changed = self.row(num).naked_single() or changed
+                changed = self.row(num).hidden_single() or changed
+                changed = self.col(num).naked_single() or changed
+                changed = self.col(num).hidden_single() or changed
+
+            for s in range(9):
+                sec = self.sec(s)
+                for num in range(s // 3 * 3, (s // 3 + 1) * 3):
+                    changed = sec.intersect(self.row(num)) or changed
+                for num in range(s % 3 * 3, (s % 3 + 1) * 3):
+                    changed = sec.intersect(self.col(num)) or changed
 
     def solved(self):
         return all(e.ready for e in self.flat())
@@ -154,7 +165,7 @@ class Board(list):
 
 
 def fill_test_board(q, b):
-    print(sum(bool(e) for r in q for e in r))
+    print(sum(bool(e) for r in q for e in r), end=' ')
     for r in range(9):
         for c in range(9):
             if q[r][c]:
@@ -163,24 +174,12 @@ def fill_test_board(q, b):
 
 used = set((r, c) for c in range(3) for r in range(3))
 
-q = [
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0, 0],
-]
-
 iii = 0
 
 
 def randomize_board(b):
     global iii
-    s = b.sec((iii // 3) % 3, iii % 3)
+    s = b.sec(iii % 7 + 1)
     e = random.choice(s)
     v = random.choice(list(e))
     e.difference_update(e - {v})
@@ -188,17 +187,32 @@ def randomize_board(b):
     iii += 1
 
 
+def simplify_q(q):
+    for r in range(9):
+        for c in range(9):
+            v = q[r][c]
+            if v == 0:
+                continue
+            try:
+                q[r][c] = 0
+                d = Board()
+                fill_test_board(q, d)
+                d.solve()
+                if not d.solved():
+                    raise Exception
+            except:
+                q[r][c] = v
+
+
 flag = False
 
 if __name__ == '__main__':
-    # e = [entry(k) for k in range(1, 10)]
 
-    b = Board()
 
     q = [
         [0, 4, 0, 0, 0, 2, 6, 0, 0],
         [8, 0, 0, 9, 3, 0, 0, 0, 0],
-        [0, 0, 0, 8, 0, 1, 0, 0, 0],
+        [0, 0, 0, 8, 0, 0, 0, 0, 0],
         [0, 6, 9, 0, 0, 0, 7, 0, 1],
         [4, 0, 0, 0, 0, 0, 0, 0, 2],
         [7, 0, 8, 0, 0, 0, 5, 4, 0],
@@ -207,24 +221,32 @@ if __name__ == '__main__':
         [0, 0, 3, 2, 0, 0, 0, 9, 0],
     ]
 
+    b = Board()
     fill_test_board(q, b)
-
-    # print(b.check())
-
     b.solve()
 
-    flag = True
+    # print()
+    # print(b.sec(6))
+    # print(b.row(7))
+    #
+    # b.sec(6).intersect(b.row(7))
+    #
+    # print()
+    # print(b.sec(6))
+    # print(b.row(7))
 
-    b.solve()
 
-    print(b.check())
+    # # while not b.solved():
+    # #     randomize_board(b)
+    # #     b.solve()
+    #
+    # b.solve()
+    #
+    # simplify_q(q)
 
-    # while not (b.solved() or b.failed()):
-    #     randomize_board(b)
-    #     b.solve()
+    e = Board()
+    fill_test_board(q, e)
 
-    c = Board()
-
-    fill_test_board(q, c)
-
-    print(tabulate([[str(c), '-->\n' * 27, str(b)]], tablefmt="plain"))
+    print()
+    print(b.solved(), b.check())
+    print(tabulate([[str(e), '-->\n' * 27, str(b)]], tablefmt="plain"))
