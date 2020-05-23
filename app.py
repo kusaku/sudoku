@@ -155,59 +155,73 @@ class Board(list):
 
     def solve_naked_tuples(self):
         changed = False
-        for num in range(9):
-            changed |= self.sec(num).naked_tuples()
-            changed |= self.row(num).naked_tuples()
-            changed |= self.col(num).naked_tuples()
+        loop_changed = True
+        while loop_changed:
+            for num in range(9):
+                loop_changed = False
+                loop_changed |= self.sec(num).naked_tuples()
+                loop_changed |= self.row(num).naked_tuples()
+                loop_changed |= self.col(num).naked_tuples()
+            changed |= loop_changed
         return changed
 
     def solve_hidden_tuples(self):
         changed = False
-        for num in range(9):
-            changed |= self.sec(num).hidden_tuples()
-            changed |= self.row(num).hidden_tuples()
-            changed |= self.col(num).hidden_tuples()
+        loop_changed = True
+        while loop_changed:
+            loop_changed = False
+            for num in range(9):
+                loop_changed |= self.sec(num).hidden_tuples()
+                loop_changed |= self.row(num).hidden_tuples()
+                loop_changed |= self.col(num).hidden_tuples()
+            changed |= loop_changed
         return changed
 
     def solve_pointing(self):
         changed = False
-        for s in range(9):
-            sec = self.sec(s)
-            for num in range(s // 3 * 3, (s // 3 + 1) * 3):
-                changed |= sec.intersect(self.row(num))
-            for num in range(s % 3 * 3, (s % 3 + 1) * 3):
-                changed |= sec.intersect(self.col(num))
+        loop_changed = True
+        while loop_changed:
+            loop_changed = False
+            for s in range(9):
+                sec = self.sec(s)
+                for num in range(s // 3 * 3, (s // 3 + 1) * 3):
+                    loop_changed |= sec.intersect(self.row(num))
+                for num in range(s % 3 * 3, (s % 3 + 1) * 3):
+                    loop_changed |= sec.intersect(self.col(num))
+            changed |= loop_changed
         return changed
 
     def solve_xwing(self):
         changed = False
-        f = lambda items: {
-            v: set(e for e in items if v in e)
-            for v, count in Counter(chain(*items)).items()
-            if count == 2
-        }
-        for num1 in range(8):
-            row1 = f(self.row(num1))
-            col1 = f(self.col(num1))
-            for num2 in range(num1 + 1, 9):
-                row2 = f(self.row(num2))
-                col2 = f(self.col(num2))
-                for v in row1.keys() & row2.keys():
-                    cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
-                    if len(cols) == 2:
-                        print(f'removing {v} from cols {cols}')
-                        for c in cols:
-                            col = set(self.col(c))
-                            for e in col - row1[v] - row2[v]:
-                                changed |= e.exclude({v})
-                for v in col1.keys() & col2.keys():
-                    rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
-                    if len(rows) == 2:
-                        print(f'removing {v} from rows {rows}')
-                        for r in rows:
-                            row = set(self.row(r))
-                            for e in row - col1[v] - col2[v]:
-                                changed |= e.exclude({v})
+        loop_changed = True
+        while loop_changed:
+            loop_changed = False
+            f = lambda items: {
+                v: set(e for e in items if v in e)
+                for v, count in Counter(chain(*items)).items()
+                if count == 2
+            }
+            for num1 in range(8):
+                row1 = f(self.row(num1))
+                col1 = f(self.col(num1))
+                for num2 in range(num1 + 1, 9):
+                    row2 = f(self.row(num2))
+                    col2 = f(self.col(num2))
+                    for v in row1.keys() & row2.keys():
+                        cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
+                        if len(cols) == 2:
+                            for c in cols:
+                                col = set(self.col(c))
+                                for e in col - row1[v] - row2[v]:
+                                    loop_changed |= e.exclude({v})
+                    for v in col1.keys() & col2.keys():
+                        rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
+                        if len(rows) == 2:
+                            for r in rows:
+                                row = set(self.row(r))
+                                for e in row - col1[v] - col2[v]:
+                                    loop_changed |= e.exclude({v})
+            changed |= loop_changed
         return changed
 
     def solve(self):
