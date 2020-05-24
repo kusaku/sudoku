@@ -230,12 +230,10 @@ class Board(list):
         loop_changed = True
         while loop_changed:
             loop_changed = False
-            es = {e for e in b.flat() if len(e) == 2}
-            seen = set()
+            es = {e for e in self.flat() if len(e) == 2}
             graph = defaultdict(set)
             for e1 in es:
-                seen.add(e1)
-                for e2 in es - seen:
+                for e2 in es:
                     if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
                         graph[e1].add(e2)
 
@@ -252,8 +250,8 @@ class Board(list):
                             #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
                             #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
                             # ))
-                            e2cells = set(chain(b.row(e2.row), b.col(e2.col), b.sec(e2.sec)))
-                            e3cells = set(chain(b.row(e3.row), b.col(e3.col), b.sec(e3.sec)))
+                            e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
+                            e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
                             for e in e2cells & e3cells - {e2, e3}:
                                 # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
                                 #     v,
