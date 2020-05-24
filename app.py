@@ -194,107 +194,173 @@ class Board(list):
 
     def solve_x_wing(self):
         changed = False
-        loop_changed = True
-        while loop_changed:
-            loop_changed = False
-            f = lambda items: {
-                v: set(e for e in items if v in e)
-                for v, count in Counter(chain(*items)).items()
-                if count == 2
-            }
-            for num1 in range(8):
-                row1 = f(self.row(num1))
-                col1 = f(self.col(num1))
-                for num2 in range(num1 + 1, 9):
-                    row2 = f(self.row(num2))
-                    col2 = f(self.col(num2))
-                    for v in row1.keys() & row2.keys():
-                        cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
-                        if len(cols) == 2:
+        f = lambda items: {
+            v: set(e for e in items if v in e)
+            for v, count in Counter(chain(*items)).items()
+            if count == 2
+        }
+        for num1 in range(8):
+            row1 = f(self.row(num1))
+            col1 = f(self.col(num1))
+            for num2 in range(num1 + 1, 9):
+                row2 = f(self.row(num2))
+                col2 = f(self.col(num2))
+                for v in row1.keys() & row2.keys():
+                    cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
+                    if len(cols) == 2:
+                        for c in cols:
+                            col = set(self.col(c))
+                            for e in col - row1[v] - row2[v]:
+                                changed |= e.exclude({v})
+                for v in col1.keys() & col2.keys():
+                    rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
+                    if len(rows) == 2:
+                        for r in rows:
+                            row = set(self.row(r))
+                            for e in row - col1[v] - col2[v]:
+                                changed |= e.exclude({v})
+        return changed
+
+    def solve_swordfish(self):
+        changed = False
+        f = lambda items: {
+            v: set(e for e in items if v in e)
+            for v, count in Counter(chain(*items)).items()
+            if count in {2, 3}
+        }
+        for num1 in range(7):
+            row1 = f(self.row(num1))
+            col1 = f(self.col(num1))
+            for num2 in range(num1 + 1, 8):
+                row2 = f(self.row(num2))
+                col2 = f(self.col(num2))
+                for num3 in range(num2 + 1, 9):
+                    row3 = f(self.row(num3))
+                    col3 = f(self.col(num3))
+                    for v in row1.keys() & row2.keys() & row3.keys():
+                        cols = {e.col for e in row1[v]} | {e.col for e in row2[v]} | {e.col for e in row3[v]}
+                        if len(cols) in {2, 3}:
                             for c in cols:
                                 col = set(self.col(c))
-                                for e in col - row1[v] - row2[v]:
-                                    loop_changed |= e.exclude({v})
-                    for v in col1.keys() & col2.keys():
-                        rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
-                        if len(rows) == 2:
+                                for e in col - row1[v] - row2[v] - row3[v]:
+                                    changed |= e.exclude({v})
+                    for v in col1.keys() & col2.keys() & col3.keys():
+                        rows = {e.row for e in col1[v]} | {e.row for e in col2[v]} | {e.row for e in col3[v]}
+                        if len(rows) in {2, 3}:
                             for r in rows:
                                 row = set(self.row(r))
-                                for e in row - col1[v] - col2[v]:
-                                    loop_changed |= e.exclude({v})
-            changed |= loop_changed
+                                for e in row - col1[v] - col2[v] - col3[v]:
+                                    changed |= e.exclude({v})
         return changed
 
-    def solve_y_wing(self):
+    def solve_xy_wing(self):
         changed = False
-        loop_changed = True
-        while loop_changed:
-            loop_changed = False
-            es = {e for e in self.flat() if len(e) == 2}
-            graph = defaultdict(set)
-            for e1 in es:
-                for e2 in es:
-                    if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
-                        graph[e1].add(e2)
-
-
-            for e1, es in graph.items():
-                seen = set()
-                for e2 in es:
-                    seen.add(e2)
-                    for e3 in es - seen:
-                        v = e2 & e3
-                        if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
-                            # print('{0}<-{1}->{2}'.format(
+        es = {e for e in self.flat() if len(e) == 2}
+        graph = defaultdict(set)
+        for e1 in es:
+            for e2 in es:
+                if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
+                    graph[e1].add(e2)
+        for e1, es in graph.items():
+            seen = set()
+            for e2 in es:
+                seen.add(e2)
+                for e3 in es - seen:
+                    v = e2 & e3
+                    if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
+                        # print('{0}<-{1}->{2}'.format(
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                        # ))
+                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
+                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
+                        for e in e2cells & e3cells - {e2, e3}:
+                            # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
+                            #     v,
+                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
                             #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
                             # ))
-                            e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
-                            e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
-                            for e in e2cells & e3cells - {e2, e3}:
-                                # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
-                                #     v,
-                                #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
-                                #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                                #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
-                                # ))
-                                loop_changed |= e.exclude(v)
-            changed |= loop_changed
+                            changed |= e.exclude(v)
         return changed
 
-    def solve(self):
+    def solve_xyz_wing(self):
+        changed = False
+        graph = defaultdict(set)
+        for e1 in (e for e in self.flat() if len(e) == 3):
+            for e2 in (e for e in self.flat() if len(e) == 2):
+                if len(e1 & e2) == 2 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
+                    graph[e1].add(e2)
+        for e1, es in graph.items():
+            seen = set()
+            for e2 in es:
+                seen.add(e2)
+                for e3 in es - seen:
+                    v = e2 & e3
+                    if len(v) == 1 and len(e1 | v) == 3 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
+                        # print('{0}<-{1}->{2}'.format(
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                        # ))
+                        e1cells = set(chain(self.row(e1.row), self.col(e1.col), self.sec(e1.sec)))
+                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
+                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
+                        for e in e1cells & e2cells & e3cells - {e1}:
+                            # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
+                            #     v,
+                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
+                            # ))
+                            changed |= e.exclude(v)
+        return changed
+
+    def solve(self, verbose=False):
         changed = True
         while changed:
             changed = False
             changed |= self.solve_naked_tuples()
 
-            if changed:
+            if verbose and changed:
                 print('\nnaked_tuples changes:')
                 print(b)
 
             if not changed:
                 changed |= self.solve_hidden_tuples()
-                if changed:
+                if verbose and changed:
                     print('\nhidden_tuples changes:')
                     print(b)
 
             if not changed:
                 changed |= self.solve_pointing()
-                if changed:
+                if verbose and changed:
                     print('\npointing changes:')
                     print(b)
 
             if not changed:
                 changed |= self.solve_x_wing()
-                if changed:
+                if verbose and changed:
                     print('\nx wing changes:')
                     print(b)
 
             if not changed:
-                changed |= self.solve_y_wing()
-                if changed:
-                    print('\ny wing changes:')
+                changed |= self.solve_swordfish()
+                if verbose and changed:
+                    print('\nswordfish changes:')
+                    print(b)
+
+            if not changed:
+                changed |= self.solve_xy_wing()
+                if verbose and changed:
+                    print('\nxy wing changes:')
+                    print(b)
+
+            if not changed:
+                changed |= self.solve_xyz_wing()
+                if verbose and changed:
+                    print('\nxyz wing changes:')
                     print(b)
 
     def solved(self):
@@ -345,22 +411,27 @@ flag = False
 
 if __name__ == '__main__':
 
+    # Swordfish (hard 17)
     q = [
-        [0, 0, 1, 0, 6, 0, 0, 5, 9],
-        [0, 0, 0, 0, 0, 3, 0, 2, 0],
-        [0, 6, 0, 0, 8, 0, 0, 0, 0],
-        [4, 0, 0, 0, 0, 0, 5, 0, 0],
-        [0, 2, 0, 0, 0, 0, 0, 0, 0],
-        [0, 7, 0, 2, 0, 0, 4, 8, 0],
-        [8, 0, 0, 0, 2, 0, 9, 0, 5],
-        [7, 0, 0, 6, 0, 9, 0, 3, 0],
-        [0, 0, 5, 0, 0, 0, 0, 4, 0],
+        [0, 0, 2, 0, 9, 0, 3, 0, 0],
+        [8, 0, 5, 0, 0, 0, 0, 0, 0],
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 9, 0, 0, 6, 0, 0, 4, 0],
+        [0, 0, 0, 0, 0, 0, 0, 5, 8],
+        [0, 0, 0, 0, 0, 0, 0, 0, 1],
+        [0, 7, 0, 0, 0, 0, 2, 0, 0],
+        [3, 0, 0, 5, 0, 0, 0, 0, 0],
+        [0, 0, 0, 1, 0, 0, 0, 0, 0],
     ]
+
+    # qs = '050030602642895317037020800023504700406000520571962483214000900760109234300240170'
+    # for i, l in enumerate(qs):
+    #     q[i // 9][i % 9] = int(l)
 
     b = Board()
     fill_test_board(q, b)
 
-    b.solve()
+    b.solve(True)
 
     # while not b.solved():
     #     randomize_board(b)
