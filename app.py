@@ -225,7 +225,7 @@ class Board(list):
             changed |= loop_changed
         return changed
 
-    def solve_xy_wing(self):
+    def solve_y_wing(self):
         changed = False
         loop_changed = True
         while loop_changed:
@@ -292,9 +292,9 @@ class Board(list):
                     print(b)
 
             if not changed:
-                changed |= self.solve_xy_wing()
+                changed |= self.solve_y_wing()
                 if changed:
-                    print('\nxy wing changes:')
+                    print('\ny wing changes:')
                     print(b)
 
     def solved(self):
@@ -346,15 +346,15 @@ flag = False
 if __name__ == '__main__':
 
     q = [
-        [1, 0, 0, 6, 0, 2, 0, 7, 0],
-        [2, 6, 0, 9, 0, 0, 1, 0, 0],
-        [0, 0, 7, 0, 0, 0, 0, 0, 0],
-        [0, 8, 0, 4, 0, 0, 0, 0, 7],
-        [0, 7, 1, 3, 0, 8, 2, 5, 0],
-        [9, 0, 0, 0, 0, 7, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 4, 0, 0],
-        [0, 0, 4, 0, 0, 6, 0, 2, 3],
-        [0, 2, 0, 1, 0, 4, 0, 0, 6],
+        [0, 0, 1, 0, 6, 0, 0, 5, 9],
+        [0, 0, 0, 0, 0, 3, 0, 2, 0],
+        [0, 6, 0, 0, 8, 0, 0, 0, 0],
+        [4, 0, 0, 0, 0, 0, 5, 0, 0],
+        [0, 2, 0, 0, 0, 0, 0, 0, 0],
+        [0, 7, 0, 2, 0, 0, 4, 8, 0],
+        [8, 0, 0, 0, 2, 0, 9, 0, 5],
+        [7, 0, 0, 6, 0, 9, 0, 3, 0],
+        [0, 0, 5, 0, 0, 0, 0, 4, 0],
     ]
 
     b = Board()
@@ -366,7 +366,7 @@ if __name__ == '__main__':
     #     randomize_board(b)
     #     b.solve()
 
-    simplify_q(q)
+    # simplify_q(q)
 
     e = Board()
     fill_test_board(q, e)
