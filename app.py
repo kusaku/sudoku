@@ -125,7 +125,7 @@ class Col(Uniques):
         return tabulate([[r] for r in self], tablefmt="orgtbl")
 
 
-class Sec(Uniques):
+class Box(Uniques):
     def __str__(self):
         return tabulate([[self[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="orgtbl")
 
@@ -149,7 +149,7 @@ class Board(list):
     def box(self, num):
         row = num // 3
         col = num % 3
-        return Sec(self[r][c] for r in range(row * 3, (row + 1) * 3) for c in range(col * 3, (col + 1) * 3))
+        return Box(self[r][c] for r in range(row * 3, (row + 1) * 3) for c in range(col * 3, (col + 1) * 3))
 
     def flat(self):
         return [self[r][c] for r in range(9) for c in range(9)]
