@@ -11,7 +11,7 @@ class Entry(set):
     def __init__(self, row, col, value=None):
         self.row = row
         self.col = col
-        self.sec = row // 3 * 3 + col // 3
+        self.box = row // 3 * 3 + col // 3
         if value is None:
             super().__init__([1, 2, 3, 4, 5, 6, 7, 8, 9])
         else:
@@ -146,7 +146,7 @@ class Board(list):
     def col(self, num):
         return Col(r[num] for r in self)
 
-    def sec(self, num):
+    def box(self, num):
         row = num // 3
         col = num % 3
         return Sec(self[r][c] for r in range(row * 3, (row + 1) * 3) for c in range(col * 3, (col + 1) * 3))
@@ -160,7 +160,7 @@ class Board(list):
         while loop_changed:
             for num in range(9):
                 loop_changed = False
-                loop_changed |= self.sec(num).naked_tuples()
+                loop_changed |= self.box(num).naked_tuples()
                 loop_changed |= self.row(num).naked_tuples()
                 loop_changed |= self.col(num).naked_tuples()
             changed |= loop_changed
@@ -172,7 +172,7 @@ class Board(list):
         while loop_changed:
             loop_changed = False
             for num in range(9):
-                loop_changed |= self.sec(num).hidden_tuples()
+                loop_changed |= self.box(num).hidden_tuples()
                 loop_changed |= self.row(num).hidden_tuples()
                 loop_changed |= self.col(num).hidden_tuples()
             changed |= loop_changed
@@ -184,11 +184,11 @@ class Board(list):
         while loop_changed:
             loop_changed = False
             for s in range(9):
-                sec = self.sec(s)
+                box = self.box(s)
                 for num in range(s // 3 * 3, (s // 3 + 1) * 3):
-                    loop_changed |= sec.intersect(self.row(num))
+                    loop_changed |= box.intersect(self.row(num))
                 for num in range(s % 3 * 3, (s % 3 + 1) * 3):
-                    loop_changed |= sec.intersect(self.col(num))
+                    loop_changed |= box.intersect(self.col(num))
             changed |= loop_changed
         return changed
 
@@ -259,7 +259,7 @@ class Board(list):
         graph = defaultdict(set)
         for e1 in es:
             for e2 in es:
-                if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
+                if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.box == e2.box):
                     graph[e1].add(e2)
         for e1, es in graph.items():
             seen = set()
@@ -267,20 +267,20 @@ class Board(list):
                 seen.add(e2)
                 for e3 in es - seen:
                     v = e2 & e3
-                    if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
+                    if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
                         # print('{0}<-{1}->{2}'.format(
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.box),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box),
                         # ))
-                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
-                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
+                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.box(e2.box)))
+                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.box(e3.box)))
                         for e in e2cells & e3cells - {e2, e3}:
                             # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
                             #     v,
-                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
+                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.box),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box)
                             # ))
                             changed |= e.exclude(v)
         return changed
@@ -290,7 +290,7 @@ class Board(list):
         graph = defaultdict(set)
         for e1 in (e for e in self.flat() if len(e) == 3):
             for e2 in (e for e in self.flat() if len(e) == 2):
-                if len(e1 & e2) == 2 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
+                if len(e1 & e2) == 2 and (e1.row == e2.row or e1.col == e2.col or e1.box == e2.box):
                     graph[e1].add(e2)
         for e1, es in graph.items():
             seen = set()
@@ -298,21 +298,21 @@ class Board(list):
                 seen.add(e2)
                 for e3 in es - seen:
                     v = e2 & e3
-                    if len(v) == 1 and len(e1 | v) == 3 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
+                    if len(v) == 1 and len(e1 | v) == 3 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
                         # print('{0}<-{1}->{2}'.format(
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.box),
+                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box),
                         # ))
-                        e1cells = set(chain(self.row(e1.row), self.col(e1.col), self.sec(e1.sec)))
-                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.sec(e2.sec)))
-                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.sec(e3.sec)))
+                        e1cells = set(chain(self.row(e1.row), self.col(e1.col), self.box(e1.box)))
+                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.box(e2.box)))
+                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.box(e3.box)))
                         for e in e1cells & e2cells & e3cells - {e1}:
                             # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
                             #     v,
-                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
+                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.box),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box)
                             # ))
                             changed |= e.exclude(v)
         return changed
@@ -370,7 +370,7 @@ class Board(list):
         return any(e.empty for e in self.flat())
 
     def check(self):
-        return all(self.row(num).check() and self.col(num).check() and self.sec(num).check() for num in range(9))
+        return all(self.row(num).check() and self.col(num).check() and self.box(num).check() for num in range(9))
 
 
 def fill_test_board(q, b):
@@ -424,9 +424,9 @@ if __name__ == '__main__':
         [0, 0, 0, 1, 0, 0, 0, 0, 0],
     ]
 
-    # qs = '050030602642895317037020800023504700406000520571962483214000900760109234300240170'
-    # for i, l in enumerate(qs):
-    #     q[i // 9][i % 9] = int(l)
+    qs = '100400006046091080005020000000500109090000050402009000000010900080930560500008004'
+    for i, l in enumerate(qs):
+        q[i // 9][i % 9] = int(l)
 
     b = Board()
     fill_test_board(q, b)
