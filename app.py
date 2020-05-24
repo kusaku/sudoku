@@ -11,6 +11,7 @@ class Entry(set):
     def __init__(self, row, col, value=None):
         self.row = row
         self.col = col
+        self.sec = row // 3 * 3 + col // 3
         if value is None:
             super().__init__([1, 2, 3, 4, 5, 6, 7, 8, 9])
         else:
@@ -191,7 +192,7 @@ class Board(list):
             changed |= loop_changed
         return changed
 
-    def solve_xwing(self):
+    def solve_x_wing(self):
         changed = False
         loop_changed = True
         while loop_changed:
@@ -224,6 +225,46 @@ class Board(list):
             changed |= loop_changed
         return changed
 
+    def solve_xy_wing(self):
+        changed = False
+        loop_changed = True
+        while loop_changed:
+            loop_changed = False
+            es = {e for e in b.flat() if len(e) == 2}
+            seen = set()
+            graph = defaultdict(set)
+            for e1 in es:
+                seen.add(e1)
+                for e2 in es - seen:
+                    if len(e1 & e2) == 1 and (e1.row == e2.row or e1.col == e2.col or e1.sec == e2.sec):
+                        graph[e1].add(e2)
+
+
+            for e1, es in graph.items():
+                seen = set()
+                for e2 in es:
+                    seen.add(e2)
+                    for e3 in es - seen:
+                        v = e2 & e3
+                        if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.sec != e3.sec:
+                            # print('{0}<-{1}->{2}'.format(
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.sec),
+                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec),
+                            # ))
+                            e2cells = set(chain(b.row(e2.row), b.col(e2.col), b.sec(e2.sec)))
+                            e3cells = set(chain(b.row(e3.row), b.col(e3.col), b.sec(e3.sec)))
+                            for e in e2cells & e3cells - {e2, e3}:
+                                # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
+                                #     v,
+                                #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.sec),
+                                #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.sec),
+                                #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.sec)
+                                # ))
+                                loop_changed |= e.exclude(v)
+            changed |= loop_changed
+        return changed
+
     def solve(self):
         changed = True
         while changed:
@@ -247,9 +288,15 @@ class Board(list):
                     print(b)
 
             if not changed:
-                changed |= self.solve_xwing()
+                changed |= self.solve_x_wing()
                 if changed:
-                    print('\nxwing changes:')
+                    print('\nx wing changes:')
+                    print(b)
+
+            if not changed:
+                changed |= self.solve_xy_wing()
+                if changed:
+                    print('\nxy wing changes:')
                     print(b)
 
     def solved(self):
@@ -315,24 +362,13 @@ if __name__ == '__main__':
     b = Board()
     fill_test_board(q, b)
 
-    print()
-    print(b)
-
     b.solve()
-
-    # r = b.row(7)
-    # print()
-    # print(r)
-    # result = r.naked_tuples()
-    # print()
-    # print(r)
-    # print(result)
 
     # while not b.solved():
     #     randomize_board(b)
     #     b.solve()
 
-    # simplify_q(q)
+    simplify_q(q)
 
     e = Board()
     fill_test_board(q, e)
