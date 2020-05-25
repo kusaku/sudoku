@@ -8,14 +8,14 @@ from tabulate import tabulate
 
 
 class Entry(set):
-    def __init__(self, row, col, value=None):
+    def __init__(self, row, col, box, initial=None):
         self.row = row
         self.col = col
-        self.box = row // 3 * 3 + col // 3
-        if value is None:
-            super().__init__([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        self.box = box
+        if initial is None:
+            super().__init__({1, 2, 3, 4, 5, 6, 7, 8, 9})
         else:
-            super().__init__([value])
+            super().__init__(initial)
 
     @property
     def ready(self):
@@ -38,10 +38,10 @@ class Entry(set):
         return False
 
     def __hash__(self):
-        return hash((self.row, self.col))
+        return hash((self.row, self.col, self.box))
 
     def __eq__(self, other):
-        return self.row, self.col == other.row, other.col
+        return self.row, self.col, self.box == other.row, other.col, other.box
 
     def __str__(self):
         s = ''
@@ -64,7 +64,7 @@ class Entry(set):
         return s
 
 
-class Uniques(list):
+class Unit(set):
     def check(self):
         c = Counter(chain(*self))
         return all(v == 1 for v in c.values())
@@ -115,44 +115,98 @@ class Uniques(list):
         return changed
 
 
-class Row(Uniques):
+class Row(Unit):
     def __str__(self):
-        return tabulate([self], tablefmt="orgtbl")
+        table = sorted(self, key=lambda e: e.col)
+        return tabulate([table], tablefmt="orgtbl")
 
 
-class Col(Uniques):
+class Col(Unit):
     def __str__(self):
-        return tabulate([[r] for r in self], tablefmt="orgtbl")
+        table = sorted(self, key=lambda e: e.row)
+        return tabulate([[e] for e in table], tablefmt="orgtbl")
 
 
-class Box(Uniques):
+class Box(Unit):
     def __str__(self):
-        return tabulate([[self[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="orgtbl")
+        table = sorted(self, key=lambda e: e.row * 9 + e.col)
+        return tabulate([[table[r * 3 + c] for c in range(3)] for r in range(3)], tablefmt="orgtbl")
 
 
-class Board(list):
-    def __init__(self):
-        super().__init__([[Entry(row, col) for col in range(9)] for row in range(9)])
+class Board(set):
+    def __init__(self, initial=None):
+        self.rows = defaultdict(set)
+        self.cols = defaultdict(set)
+        self.boxs = defaultdict(set)
+        for r in range(9):
+            for c in range(9):
+                box = r // 3 * 3 + c // 3
+                e = Entry(r, c, box, None if initial is None else initial[r][c])
+                self.rows[r].add(e)
+                self.cols[c].add(e)
+                self.boxs[box].add(e)
+                self.add(e)
+
+    @classmethod
+    def from_array(self, q):
+        initial = []
+        for r in range(9):
+            row = []
+            for c in range(9):
+                v = int(q[r][c])
+                if v == 0:
+                    v = {1, 2, 3, 4, 5, 6, 7, 8, 9}
+                else:
+                    v = {v}
+                row.append(v)
+            initial.append(row)
+        return Board(initial)
+
+    def to_array(self):
+        return [[next(iter(e)) if e.ready else 0 for e in sorted(self.rows[r], key=lambda e: e.col)] for r in range(9)]
+
+    @classmethod
+    def from_string(self, q):
+        initial = []
+        for r in range(9):
+            row = []
+            for c in range(9):
+                v = int(q[r * 9 + c])
+                if v == 0:
+                    v = {1, 2, 3, 4, 5, 6, 7, 8, 9}
+                else:
+                    v = {v}
+                row.append(v)
+            initial.append(row)
+        return Board(initial)
+
+    def to_string(self):
+        return ''.join(str(next(iter(e))) if e.ready else ' ' for e in sorted(self, key=lambda e: e.row * 9 + e.col))
 
     def __str__(self):
-        return tabulate(self, tablefmt="orgtbl")
+        return tabulate([[str(self.row(r))] for r in range(9)], tablefmt="plain")
 
-    def update(self, row, col, value):
-        self[row][col] = Entry(row, col, value)
+    def update(self, v, row=None, col=None, box=None):
+        es = set(self)
+        if row is not None:
+            es &= self.rows[row]
+        if col is not None:
+            es &= self.cols[col]
+        if box is not None:
+            es &= self.box[box]
+        for e in es:
+            print(v, end='')
+            e.clear()
+            e.add(v)
 
     def row(self, num):
-        return Row(self[num])
+        return Row(self.rows[num])
 
     def col(self, num):
-        return Col(r[num] for r in self)
+        return Col(self.cols[num])
 
     def box(self, num):
-        row = num // 3
-        col = num % 3
-        return Box(self[r][c] for r in range(row * 3, (row + 1) * 3) for c in range(col * 3, (col + 1) * 3))
-
-    def flat(self):
-        return [self[r][c] for r in range(9) for c in range(9)]
+        return Box(self.boxs[num])
 
     def solve_naked_tuples(self):
         changed = False
@@ -255,7 +309,7 @@ class Board(list):
 
     def solve_xy_wing(self):
         changed = False
-        es = {e for e in self.flat() if len(e) == 2}
+        es = {e for e in self if len(e) == 2}
         graph = defaultdict(set)
         for e1 in es:
             for e2 in es:
@@ -288,8 +342,8 @@ class Board(list):
     def solve_xyz_wing(self):
         changed = False
         graph = defaultdict(set)
-        for e1 in (e for e in self.flat() if len(e) == 3):
-            for e2 in (e for e in self.flat() if len(e) == 2):
+        for e1 in (e for e in self if len(e) == 3):
+            for e2 in (e for e in self if len(e) == 2):
                 if len(e1 & e2) == 2 and (e1.row == e2.row or e1.col == e2.col or e1.box == e2.box):
                     graph[e1].add(e2)
         for e1, es in graph.items():
@@ -364,27 +418,20 @@ class Board(list):
                     print(b)
 
     def solved(self):
-        return all(e.ready for e in self.flat())
+        return all(e.ready for e in self)
 
     def failed(self):
-        return any(e.empty for e in self.flat())
+        return any(e.empty for e in self)
 
     def check(self):
-        return all(self.row(num).check() and self.col(num).check() and self.box(num).check() for num in range(9))
-
-
-def fill_test_board(q, b):
-    print(sum(bool(e) for r in q for e in r), end=' ')
-    for r in range(9):
-        for c in range(9):
-            if q[r][c]:
-                b.update(r, c, q[r][c])
+        c = Counter(chain(*self))
+        return all(v == 9 for v in c.values())
 
 
 def randomize_board(b):
     # n = random.choice([0, 1, 2, 3, 5, 6, 7, 8])
     # s = b.row(n)
-    e = random.choice([e for e in b.flat() if not e.ready])
+    e = random.choice([e for e in b if not e.ready])
     v = random.choice(list(e))
     e.difference_update(e - {v})
     q[e.row][e.col] = v
@@ -398,8 +445,7 @@ def simplify_q(q):
                 continue
             try:
                 q[r][c] = 0
-                d = Board()
-                fill_test_board(q, d)
+                d = Board.from_array(q)
                 d.solve()
                 if not d.solved():
                     raise Exception
@@ -410,28 +456,23 @@ def simplify_q(q):
 flag = False
 
 if __name__ == '__main__':
-
-    # Swordfish (hard 17)
+    # X-wing & XY-wing
     q = [
-        [0, 0, 2, 0, 9, 0, 3, 0, 0],
-        [8, 0, 5, 0, 0, 0, 0, 0, 0],
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 9, 0, 0, 6, 0, 0, 4, 0],
-        [0, 0, 0, 0, 0, 0, 0, 5, 8],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 7, 0, 0, 0, 0, 2, 0, 0],
-        [3, 0, 0, 5, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
+        [1, 0, 0, 6, 0, 2, 0, 7, 0],
+        [2, 6, 0, 9, 0, 0, 1, 0, 0],
+        [0, 0, 7, 0, 0, 0, 0, 0, 0],
+        [0, 8, 0, 4, 0, 0, 0, 0, 7],
+        [0, 7, 1, 3, 0, 8, 2, 5, 0],
+        [9, 0, 0, 0, 0, 7, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 4, 0, 0],
+        [0, 0, 4, 0, 0, 6, 0, 2, 3],
+        [0, 2, 0, 1, 0, 4, 0, 0, 6],
     ]
 
-    qs = '100400006046091080005020000000500109090000050402009000000010900080930560500008004'
-    for i, l in enumerate(qs):
-        q[i // 9][i % 9] = int(l)
+    a = Board.from_array(q)
+    b = Board.from_array(q)
 
-    b = Board()
-    fill_test_board(q, b)
-
-    b.solve(True)
+    b.solve()
 
     # while not b.solved():
     #     randomize_board(b)
@@ -439,13 +480,8 @@ if __name__ == '__main__':
 
     # simplify_q(q)
 
-    e = Board()
-    fill_test_board(q, e)
-
-    print()
     print(b.solved(), b.check())
-    print(tabulate([[str(e), '-->\n' * 27, str(b)]], tablefmt="plain"))
+    print(tabulate([[a, '-->\n' * 27, b]], tablefmt="plain"))
 
-    print()
-    print(repr(''.join(map(str, chain(*q))).replace('0', ' ')))
-    print(repr(''.join(map(str, chain(*(e if e.ready else {0} for e in b.flat())))).replace('0', ' ')))
+    print(repr(a.to_string()))
+    print(repr(b.to_string()))
