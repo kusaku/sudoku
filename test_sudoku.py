@@ -193,6 +193,48 @@ def test_board_solve_xwing():
     assert set(next(iter(brd.get(row=0, col=8)))) == a - b
 
 
+def test_board_solve_swordfish():
+    a = {1, 2, 3, 4}
+    b = {1, 2, 3}
+    z = set()
+
+    brd = Board.from_array([
+        [z, z, z, z, z, z, z, a, z],
+        [z, b, z, z, b, z, z, b, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, b, z, z, b, z, z, b, z],
+        [z, z, z, z, a, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, b, z, z, b, z, z, b, z],
+        [z, a, z, z, z, z, z, z, z],
+    ])
+
+    brd.solve(strategies={Board.SWORDFISH})
+
+    assert set(next(iter(brd.get(row=8, col=1)))) == a - b
+    assert set(next(iter(brd.get(row=5, col=4)))) == a - b
+    assert set(next(iter(brd.get(row=0, col=7)))) == a - b
+
+    brd = Board.from_array([
+        [z, z, z, z, z, z, z, a, z],
+        [z, b, z, z, z, z, z, b, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, b, z, z, b, z, z, b, z],
+        [z, a, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, b, z, z, b, z, z, z, z],
+        [z, z, z, z, a, z, z, z, z],
+    ])
+
+    brd.solve(strategies={Board.SWORDFISH})
+
+    assert set(next(iter(brd.get(row=5, col=1)))) == a - b
+    assert set(next(iter(brd.get(row=8, col=4)))) == a - b
+    assert set(next(iter(brd.get(row=0, col=7)))) == a - b
+
+
 def test_board_solve_xywing():
     r = {1, 2}
     a = {2, 3}
