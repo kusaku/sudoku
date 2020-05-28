@@ -379,7 +379,7 @@ class Board(Atom):
                 seen.add(e2)
                 for e3 in es - seen:
                     v = e2 & e3
-                    if len(v) == 1 and len(e1 | v) == 3 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
+                    if len(v) == 1 and len(e1 | v) == 3:
                         # print({0}<-{1}->{2}.format(
                         #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
                         #     {0} at [{1},{2}][{3}].format(tuple(e1), e1.row, e1.col, e1.box),
@@ -388,7 +388,7 @@ class Board(Atom):
                         e1cells = self.row(e1.row) | self.col(e1.col) | self.box(e1.box)
                         e2cells = self.row(e2.row) | self.col(e2.col) | self.box(e2.box)
                         e3cells = self.row(e3.row) | self.col(e3.col) | self.box(e3.box)
-                        for e in e1cells & e2cells & e3cells - {e1}:
+                        for e in e1cells & e2cells & e3cells - {e1, e2, e3}:
                             # print(excluding {0} from {1} because it is on intersection of {2} and {3}.format(
                             #     v,
                             #     [{1}, {2}][{3}].format(tuple(e), e.row, e.col, e.box),
