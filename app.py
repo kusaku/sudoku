@@ -12,8 +12,8 @@ class Atom(set):
     RANK = ORDER ** 2
 
 
-class Entry(Atom):
-    VALUES = list(['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+class Element(Atom):
+    VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     def __init__(self, row, col, box, initial=None):
         self.row = row
@@ -79,7 +79,7 @@ class Unit(Atom):
 
     def naked_tuples(self):
         changed = False
-        c = Counter(map(tuple, self))
+        c = Counter(map(tuple, self))  # noqa - tuple(set(...))
         for v, count in c.items():
             if count == len(v):
                 vs = set(v)
@@ -105,21 +105,20 @@ class Unit(Atom):
                 c = set(chain(*a))
                 if c != vs.keys() and a == b:
                     for e in a:
-                        changed |= e.intersect(vs.keys())
+                        ch = e.intersect(vs.keys())
+                        changed |= ch
         return changed
 
-    def intersect(self, other):
+    def intersections(self, other):
         changed = False
-        a = set(self)
-        b = set(other)
-        for v in set(chain(*(a & b))):
-            c = {e for e in a | b if v in e}
-            if c & a == c & a & b:
-                for e in c - a:
+        for v in set(chain(*(self & other))):
+            c = {e for e in self | other if v in e}
+            if c & self == c & self & other:
+                for e in c - self:
                     changed |= e.exclude({v})
-            if c & b == c & a & b:
-                for e in c - b:
-                    changed = e.exclude({v})
+            if c & other == c & self & other:
+                for e in c - other:
+                    changed |= e.exclude({v})
         return changed
 
 
@@ -127,24 +126,31 @@ class Row(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.col)
-        return tabulate([table], tablefmt="orgtbl")
+        return tabulate([table], tablefmt='orgtbl')
 
 
 class Col(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.row)
-        return tabulate([[e] for e in table], tablefmt="orgtbl")
+        return tabulate([[e] for e in table], tablefmt='orgtbl')
 
 
 class Box(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.row * self.RANK + e.col)
-        return tabulate([[table[r * self.ORDER + c] for c in range(self.ORDER)] for r in range(3)], tablefmt="orgtbl")
+        return tabulate([[table[r * self.ORDER + c] for c in range(self.ORDER)] for r in range(3)], tablefmt='orgtbl')
 
 
 class Board(Atom):
+    NAKED_TUPLES = 1
+    HIDDEN_TUPLES = 2
+    INTERSECTIONS = 3
+    XWING = 4
+    XYWING = 5
+    XYZWING = 6
+    SWORDFISH = 7
 
     def __init__(self, initial=None):
         self.rows = defaultdict(set)
@@ -153,7 +159,7 @@ class Board(Atom):
         for r in range(self.RANK):
             for c in range(self.RANK):
                 box = r // self.ORDER * self.ORDER + c // self.ORDER
-                e = Entry(r, c, box, None if initial is None else initial[r][c])
+                e = Element(r, c, box, None if initial is None else initial[r][c])
                 self.rows[r].add(e)
                 self.cols[c].add(e)
                 self.boxs[box].add(e)
@@ -166,10 +172,12 @@ class Board(Atom):
             row = []
             for c in range(cls.RANK):
                 v = q[r][c]
-                if v == 0:
-                    v = None
-                else:
+                if v in Element.VALUES:
                     v = {v}
+                elif type(v) is set:
+                    v = set(v)
+                else:
+                    v = None
                 row.append(v)
             initial.append(row)
         return Board(initial)
@@ -189,31 +197,36 @@ class Board(Atom):
         for r in range(self.RANK):
             row = []
             for c in range(self.RANK):
-                v = q[r * self.RANK + c]
-                if v in {'0', ' ', '*'}:
-                    v = None
-                else:
+                v = int(q[r * self.RANK + c])
+                if v in Element.VALUES:
                     v = {v}
+                else:
+                    v = None
                 row.append(v)
             initial.append(row)
         return Board(initial)
 
     def to_string(self):
         return ''.join(
-            str(next(iter(e))) if e.ready else ' ' for e in sorted(self, key=lambda e: e.row * self.RANK + e.col))
+            str(next(iter(e))) if e.ready else ' '
+            for e in sorted(self, key=lambda e: e.row * self.RANK + e.col)
+        )
 
     def __str__(self):
-        return tabulate([[str(self.row(r))] for r in range(self.RANK)], tablefmt="plain")
+        return tabulate([[str(self.row(r))] for r in range(self.RANK)], tablefmt='plain')
 
-    def update(self, v, row=None, col=None, box=None):
+    def get(self, row=None, col=None, box=None):
         es = set(self)
         if row is not None:
             es &= self.rows[row]
         if col is not None:
             es &= self.cols[col]
         if box is not None:
-            es &= self.box[box]
-        for e in es:
+            es &= self.boxs[box]
+        return es
+
+    def update(self, v, row=None, col=None, box=None):
+        for e in self.get(row, col, box):
             e.clear()
             e.add(v)
 
@@ -230,8 +243,8 @@ class Board(Atom):
         changed = False
         loop_changed = True
         while loop_changed:
+            loop_changed = False
             for num in range(self.RANK):
-                loop_changed = False
                 loop_changed |= self.box(num).naked_tuples()
                 loop_changed |= self.row(num).naked_tuples()
                 loop_changed |= self.col(num).naked_tuples()
@@ -250,17 +263,17 @@ class Board(Atom):
             changed |= loop_changed
         return changed
 
-    def solve_pointing(self):
+    def solve_intersections(self):
         changed = False
         loop_changed = True
         while loop_changed:
             loop_changed = False
-            for s in range(self.RANK):
-                box = self.box(s)
-                for num in range(s // self.ORDER * self.ORDER, (s // self.ORDER + 1) * self.ORDER):
-                    loop_changed |= box.intersect(self.row(num))
-                for num in range(s % self.ORDER * self.ORDER, (s % self.ORDER + 1) * self.ORDER):
-                    loop_changed |= box.intersect(self.col(num))
+            for b in range(self.RANK):
+                box = self.box(b)
+                for num in {e.row for e in box}:
+                    loop_changed |= box.intersections(self.row(num))
+                for num in {e.col for e in box}:
+                    loop_changed |= box.intersections(self.col(num))
             changed |= loop_changed
         return changed
 
@@ -281,15 +294,13 @@ class Board(Atom):
                     cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
                     if len(cols) == 2:
                         for c in cols:
-                            col = set(self.col(c))
-                            for e in col - row1[v] - row2[v]:
+                            for e in self.col(c) - row1[v] - row2[v]:
                                 changed |= e.exclude({v})
                 for v in col1.keys() & col2.keys():
                     rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
                     if len(rows) == 2:
                         for r in rows:
-                            row = set(self.row(r))
-                            for e in row - col1[v] - col2[v]:
+                            for e in self.row(r) - col1[v] - col2[v]:
                                 changed |= e.exclude({v})
         return changed
 
@@ -313,15 +324,13 @@ class Board(Atom):
                         cols = {e.col for e in row1[v]} | {e.col for e in row2[v]} | {e.col for e in row3[v]}
                         if len(cols) in {2, 3}:
                             for c in cols:
-                                col = set(self.col(c))
-                                for e in col - row1[v] - row2[v] - row3[v]:
+                                for e in self.col(c) - row1[v] - row2[v] - row3[v]:
                                     changed |= e.exclude({v})
                     for v in col1.keys() & col2.keys() & col3.keys():
                         rows = {e.row for e in col1[v]} | {e.row for e in col2[v]} | {e.row for e in col3[v]}
                         if len(rows) in {2, 3}:
                             for r in rows:
-                                row = set(self.row(r))
-                                for e in row - col1[v] - col2[v] - col3[v]:
+                                for e in self.row(r) - col1[v] - col2[v] - col3[v]:
                                     changed |= e.exclude({v})
         return changed
 
@@ -340,19 +349,19 @@ class Board(Atom):
                 for e3 in es - seen:
                     v = e2 & e3
                     if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
-                        # print('{0}<-{1}->{2}'.format(
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.box),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box),
+                        # print({0}<-{1}->{2}.format(
+                        #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
+                        #     {0} at [{1},{2}][{3}].format(tuple(e1), e1.row, e1.col, e1.box),
+                        #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box),
                         # ))
-                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.box(e2.box)))
-                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.box(e3.box)))
+                        e2cells = self.row(e2.row) | self.col(e2.col) | self.box(e2.box)
+                        e3cells = self.row(e3.row) | self.col(e3.col) | self.box(e3.box)
                         for e in e2cells & e3cells - {e2, e3}:
-                            # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
+                            # print(excluding {0} from {1} because it is on intersection of {2} and {3}.format(
                             #     v,
-                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.box),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box)
+                            #     [{1}, {2}][{3}].format(tuple(e), e.row, e.col, e.box),
+                            #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
+                            #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box)
                             # ))
                             changed |= e.exclude(v)
         return changed
@@ -371,69 +380,52 @@ class Board(Atom):
                 for e3 in es - seen:
                     v = e2 & e3
                     if len(v) == 1 and len(e1 | v) == 3 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
-                        # print('{0}<-{1}->{2}'.format(
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e1), e1.row, e1.col, e1.box),
-                        #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box),
+                        # print({0}<-{1}->{2}.format(
+                        #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
+                        #     {0} at [{1},{2}][{3}].format(tuple(e1), e1.row, e1.col, e1.box),
+                        #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box),
                         # ))
-                        e1cells = set(chain(self.row(e1.row), self.col(e1.col), self.box(e1.box)))
-                        e2cells = set(chain(self.row(e2.row), self.col(e2.col), self.box(e2.box)))
-                        e3cells = set(chain(self.row(e3.row), self.col(e3.col), self.box(e3.box)))
+                        e1cells = self.row(e1.row) | self.col(e1.col) | self.box(e1.box)
+                        e2cells = self.row(e2.row) | self.col(e2.col) | self.box(e2.box)
+                        e3cells = self.row(e3.row) | self.col(e3.col) | self.box(e3.box)
                         for e in e1cells & e2cells & e3cells - {e1}:
-                            # print('excluding {0} from {1} because it is on intersection of {2} and {3}'.format(
+                            # print(excluding {0} from {1} because it is on intersection of {2} and {3}.format(
                             #     v,
-                            #     '[{1}, {2}][{3}]'.format(tuple(e), e.row, e.col, e.box),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e2), e2.row, e2.col, e2.box),
-                            #     '{0} at [{1},{2}][{3}]'.format(tuple(e3), e3.row, e3.col, e3.box)
+                            #     [{1}, {2}][{3}].format(tuple(e), e.row, e.col, e.box),
+                            #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
+                            #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box)
                             # ))
                             changed |= e.exclude(v)
         return changed
 
-    def solve(self, verbose=False):
+    def solve(self, strategies=None):
+        if strategies is None:
+            strategies = {self.NAKED_TUPLES, self.HIDDEN_TUPLES, self.INTERSECTIONS, self.XWING, self.XYWING,
+                          self.XYZWING, self.SWORDFISH}
         changed = True
         while changed:
             changed = False
-            changed |= self.solve_naked_tuples()
 
-            if verbose and changed:
-                print('\nnaked_tuples changes:')
-                print(b)
+            if self.NAKED_TUPLES in strategies and not changed:
+                changed |= self.solve_naked_tuples()
 
-            if not changed:
+            if self.HIDDEN_TUPLES in strategies and not changed:
                 changed |= self.solve_hidden_tuples()
-                if verbose and changed:
-                    print('\nhidden_tuples changes:')
-                    print(b)
 
-            if not changed:
-                changed |= self.solve_pointing()
-                if verbose and changed:
-                    print('\npointing changes:')
-                    print(b)
+            if self.INTERSECTIONS in strategies and not changed:
+                changed |= self.solve_intersections()
 
-            if not changed:
+            if self.XWING in strategies and not changed:
                 changed |= self.solve_x_wing()
-                if verbose and changed:
-                    print('\nx wing changes:')
-                    print(b)
 
-            if not changed:
-                changed |= self.solve_swordfish()
-                if verbose and changed:
-                    print('\nswordfish changes:')
-                    print(b)
-
-            if not changed:
+            if self.XYWING in strategies and not changed:
                 changed |= self.solve_xy_wing()
-                if verbose and changed:
-                    print('\nxy wing changes:')
-                    print(b)
 
-            if not changed:
+            if self.XYZWING in strategies and not changed:
                 changed |= self.solve_xyz_wing()
-                if verbose and changed:
-                    print('\nxyz wing changes:')
-                    print(b)
+
+            if self.SWORDFISH in strategies and not changed:
+                changed |= self.solve_swordfish()
 
     def solved(self):
         return all(e.ready for e in self)
@@ -469,6 +461,7 @@ if __name__ == '__main__':
     b = Board()
     q = b.to_array()
 
+
     def randomize_board(q, b):
         # n = random.choice([0, 1, 2, 3, 5, 6, 7, 8])
         # s = b.row(n)
@@ -486,18 +479,32 @@ if __name__ == '__main__':
     while not b.solved():
         randomize_board(q, b)
         # print(b)
-        b.solve()
+        b.solve(strategies={Board.HIDDEN_TUPLES})
 
-    b = Board.from_array(q)
-    print(b)
-    print(repr(b.to_string()))
-    b.solve()
-    print(b)
+    # b = Board.from_array([
+    #     [1, 0, 0, 6, 0, 2, 0, 7, 0],
+    #     [2, 6, 0, 9, 0, 0, 1, 0, 0],
+    #     [0, 0, 7, 0, 0, 0, 0, 0, 0],
+    #     [0, 8, 0, 4, 0, 0, 0, 0, 7],
+    #     [0, 7, 1, 3, 0, 8, 2, 5, 0],
+    #     [9, 0, 0, 0, 0, 7, 0, 1, 0],
+    #     [0, 0, 0, 0, 0, 0, 4, 0, 0],
+    #     [0, 0, 4, 0, 0, 6, 0, 2, 3],
+    #     [0, 2, 0, 1, 0, 4, 0, 0, 6],
+    # ])
     #
-    # b = Board.from_string('   5 fe    a 4 7  3     9c4g  d  f    6g3d152 ab a b2  d6 fec g3      f7 b      3d7  1   ga4b6 f  a g528 9c6ed 1  9 3 b6    4 2c  de ba      3   34c   fge  62  g2 f5  1   87 ea      3   9c      f2    a      d8 63  1   2     c9 db  5e        4    d   7f  8 ')
+    # print(b)
+    # b.solve()
+    # print(repr(b.to_string()))
+    # print(b.solved(), b.check())
+    #
+    # print(b)
+    # print(repr(b.to_string()))
+    # print(b.solved(), b.check())
+    #
+    # b = Board.from_string(   5 fe    a 4 7  3     9c4g  d  f    6g3d152 ab a b2  d6 fec g3      f7 b      3d7  1   ga4b6 f  a g528 9c6ed 1  9 3 b6    4 2c  de ba      3   34c   fge  62  g2 f5  1   87 ea      3   9c      f2    a      d8 63  1   2     c9 db  5e        4    d   7f  8 )
     # b.solve(True)
     # print(b)
-
 
     # # X-wing & XY-wing
     # q = [
@@ -524,7 +531,7 @@ if __name__ == '__main__':
     # # simplify_q(q)
     #
     # print(b.solved(), b.check())
-    # print(tabulate([[a, '-->\n' * 27, b]], tablefmt="plain"))
+    # print(tabulate([[a, -->\n * 27, b]], tablefmt='plain'))
     #
     # print(repr(a.to_string()))
     # print(repr(b.to_string()))
