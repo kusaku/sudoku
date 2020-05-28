@@ -116,7 +116,7 @@ def test_board_solve_hidden_tuples():
     assert set(next(iter(brd.get(row=0, col=0)))) == z - (a | b | c)
 
 
-def test_board_solve_intersectionss():
+def test_board_solve_intersections():
     a = {1, 2, 3}
     b = {2, 3}
     z = set()
@@ -136,3 +136,197 @@ def test_board_solve_intersectionss():
     brd.solve(strategies={Board.INTERSECTIONS})
 
     assert set(next(iter(brd.get(row=1, col=1)))) == a - b
+
+
+def test_board_solve_xwing():
+    a = {1, 2, 3}
+    b = {1, 2}
+    z = set()
+
+    brd = Board.from_array([
+        [b, z, z, z, b, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [b, z, z, z, b, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [a, z, z, z, z, z, z, z, z],
+    ])
+
+    brd.solve(strategies={Board.XWING})
+
+    assert set(next(iter(brd.get(row=8, col=0)))) == a - b
+
+    brd = Board.from_array([
+        [b, z, z, z, b, z, z, z, a],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [b, z, z, z, b, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [a, z, z, z, z, z, z, z, z],
+    ])
+
+    brd.solve(strategies={Board.XWING})
+
+    assert set(next(iter(brd.get(row=8, col=0)))) == a
+    assert set(next(iter(brd.get(row=0, col=8)))) == a
+
+    brd = Board.from_array([
+        [b, z, z, z, b, z, z, z, a],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [b, z, z, z, b, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+        [z, z, z, z, z, z, z, z, z],
+    ])
+
+    brd.solve(strategies={Board.XWING})
+
+    assert set(next(iter(brd.get(row=0, col=8)))) == a - b
+
+
+def test_board_solve_xywing():
+    r = {1, 2}
+    a = {2, 3}
+    b = {1, 3}
+    c = {1, 2, 3, 4, 5, 6, 7, 8, 9} - (a & b)
+
+    assert len(r & a) == len(r & b) == len(a & b) == 1
+
+    brd = Board.from_array([
+        [r, 0, 0, 0, 0, 0, 0, 0, b],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [a, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYWING})
+
+    ers = brd.get(row=0, col=0)
+    eas = brd.get(row=8) | brd.get(col=0) | brd.get(box=6)
+    ebs = brd.get(row=0) | brd.get(col=8) | brd.get(box=2)
+
+    assert all(set(e) == c for e in eas & ebs - ers)
+
+    brd = Board.from_array([
+        [0, 0, r, 0, 0, b, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [a, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYWING})
+
+    ers = brd.get(row=0, col=3)
+    eas = brd.get(row=2) | brd.get(col=0) | brd.get(box=3)
+    ebs = brd.get(row=0) | brd.get(col=5) | brd.get(box=1)
+
+    assert all(set(e) == c for e in eas & ebs - ers)
+
+    brd = Board.from_array([
+        [a, 0, 0, r, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, b, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYWING})
+
+    ers = brd.get(row=0, col=2)
+    eas = brd.get(row=0) | brd.get(col=0) | brd.get(box=0)
+    ebs = brd.get(row=2) | brd.get(col=5) | brd.get(box=4)
+
+    assert all(set(e) == c for e in eas & ebs - ers)
+
+
+def test_board_solve_xyzwing():
+    r = {1, 2, 3}
+    a = {2, 3}
+    b = {1, 3}
+    c = {1, 2, 3, 4, 5, 6, 7, 8, 9} - (a & b)
+
+    assert len(r & a) == len(r & b) == 2
+    assert len(a & b) == 1
+
+    brd = Board.from_array([
+        [r, 0, 0, 0, 0, 0, 0, 0, b],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [a, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYZWING})
+
+    ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
+    eas = (brd.get(row=2) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=2, col=0, box=0)
+    ebs = (brd.get(row=0) | brd.get(col=8) | brd.get(box=2)) - brd.get(row=0, col=8, box=2)
+
+    assert all(set(e) == c for e in eas & ebs & ers)
+
+    brd = Board.from_array([
+        [a, 0, 0, 0, 0, 0, r, 0, b],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYZWING})
+
+    ers = (brd.get(row=0) | brd.get(col=6) | brd.get(box=2)) - brd.get(row=0, col=6, box=2)
+    eas = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
+    ebs = (brd.get(row=0) | brd.get(col=8) | brd.get(box=2)) - brd.get(row=0, col=8, box=2)
+
+    assert all(set(e) == c for e in eas & ebs & ers)
+
+    brd = Board.from_array([
+        [r, 0, a, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, b, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    ])
+
+    brd.solve(strategies={Board.XYZWING})
+
+    ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
+    eas = (brd.get(row=0) | brd.get(col=2) | brd.get(box=0)) - brd.get(row=0, col=2, box=0)
+    ebs = (brd.get(row=2) | brd.get(col=1) | brd.get(box=0)) - brd.get(row=2, col=1, box=0)
+
+    assert all(set(e) == c for e in eas & ebs & ers)
