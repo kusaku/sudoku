@@ -70,6 +70,9 @@ class Element(Atom):
 
         return s
 
+    def __repr__(self):
+        return 'Element(%d, %d, %d)' % (self.row, self.col, self.box)
+
 
 class Unit(Atom):
 
