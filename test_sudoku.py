@@ -372,3 +372,19 @@ def test_board_solve_xyzwing():
     ebs = (brd.get(row=2) | brd.get(col=1) | brd.get(box=0)) - brd.get(row=2, col=1, box=0)
 
     assert all(set(e) == c for e in eas & ebs & ers)
+
+
+# TODO: rewrite to synthetic test
+def test_board_solve_coloring():
+    # https://www.sudokuwiki.org/sudoku.htm?bd=062900000004308000709000400600801000003000200000207003001000904000709300000004120
+    brd = Board.from_string('062900000004308000709000400600801000003000200000207003001000904000709300000004120')
+
+    Solver.solve(brd, strategies=Solver.STRATEGIES.keys() - {Solver.COLORING})
+    assert brd.solved() is False
+
+    Solver.solve(brd)
+    assert brd.solved() is True
+
+
+if __name__ == '__main__':
+    test_board_solve_coloring()

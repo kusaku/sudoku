@@ -382,6 +382,57 @@ class Solver:
                             changed |= e.exclude(v)
         return changed
 
+    def solve_coloring(brd):
+        changed = False
+        # unsolved = {e for e in self if not e.ready}
+        unsolved = {e for e in brd}
+        vs = set(chain(*unsolved))
+        for v in vs:
+            es = {e for e in unsolved if v in e}
+
+            def bilocation(e1, e2):
+                if e1 == e2:
+                    return False
+                if e1.row == e2.row:
+                    return {e1, e2} == es & brd.row(e1.row)
+                if e1.col == e2.col:
+                    return {e1, e2} == es & brd.col(e1.col)
+                if e1.box == e2.box:
+                    return {e1, e2} == es & brd.box(e1.box)
+
+            graph = defaultdict(set)
+            for e1 in es:
+                for e2 in es:
+                    if bilocation(e1, e2):
+                        graph[e1].add(e2)
+                        graph[e2].add(e1)
+            seen = set()
+            while graph.keys() - seen:
+                a, b = set(), set()
+                e = next(iter(graph.keys() - seen))
+                stack = [(a, b, e)]
+                while stack:
+                    a, b, e = stack.pop()
+                    if e in a | b:
+                        continue
+                    a.add(e)
+                    if e in graph:
+                        stack.extend((b, a, e) for e in graph[e])
+                # rule 4
+                for e1 in a:
+                    for e2 in b:
+                        e1cells = brd.row(e1.row) | brd.col(e1.col) | brd.box(e1.box)
+                        e2cells = brd.row(e2.row) | brd.col(e2.col) | brd.box(e2.box)
+                        for e in es & e1cells & e2cells - a - b:
+                            changed |= e.exclude({v})
+                seen |= a | b
+                # rule 2
+                for side in (a, b):
+                    if {len(side)} != set(map(len, map(set, zip(*((e.row, e.col, e.box) for e in side))))):
+                        for e in side:
+                            changed |= e.exclude({v})
+        return changed
+
     NAKED_TUPLES = 1
     HIDDEN_TUPLES = 2
     INTERSECTIONS = 3
@@ -389,6 +440,7 @@ class Solver:
     XYWING = 5
     XYZWING = 6
     SWORDFISH = 7
+    COLORING = 8
 
     STRATEGIES = {
         NAKED_TUPLES: solve_naked_tuples,
@@ -398,6 +450,7 @@ class Solver:
         XYWING: solve_xy_wing,
         XYZWING: solve_xyz_wing,
         SWORDFISH: solve_swordfish,
+        COLORING: solve_coloring,
     }
 
     @classmethod
