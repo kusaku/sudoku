@@ -1,4 +1,4 @@
-from app import Board
+from app import Board, Solver
 
 
 def test_board_solved():
@@ -88,7 +88,7 @@ def test_board_solve_naked_tuples():
         [9, 3, 6, 1, 4, 7, 2, 5, 0],
     ])
 
-    brd.solve(strategies={Board.NAKED_TUPLES})
+    Solver.solve(brd, strategies={Solver.NAKED_TUPLES})
 
     assert brd.solved()
 
@@ -111,7 +111,7 @@ def test_board_solve_hidden_tuples():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.HIDDEN_TUPLES})
+    Solver.solve(brd, strategies={Solver.HIDDEN_TUPLES})
 
     assert set(next(iter(brd.get(row=0, col=0)))) == z - (a | b | c)
 
@@ -133,7 +133,7 @@ def test_board_solve_intersections():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.INTERSECTIONS})
+    Solver.solve(brd, strategies={Solver.INTERSECTIONS})
 
     assert set(next(iter(brd.get(row=1, col=1)))) == a - b
 
@@ -155,7 +155,7 @@ def test_board_solve_xwing():
         [a, z, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.XWING})
+    Solver.solve(brd, strategies={Solver.XWING})
 
     assert set(next(iter(brd.get(row=8, col=0)))) == a - b
 
@@ -171,7 +171,7 @@ def test_board_solve_xwing():
         [a, z, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.XWING})
+    Solver.solve(brd, strategies={Solver.XWING})
 
     assert set(next(iter(brd.get(row=8, col=0)))) == a
     assert set(next(iter(brd.get(row=0, col=8)))) == a
@@ -188,7 +188,7 @@ def test_board_solve_xwing():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.XWING})
+    Solver.solve(brd, strategies={Solver.XWING})
 
     assert set(next(iter(brd.get(row=0, col=8)))) == a - b
 
@@ -210,7 +210,7 @@ def test_board_solve_swordfish():
         [z, a, z, z, z, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.SWORDFISH})
+    Solver.solve(brd, strategies={Solver.SWORDFISH})
 
     assert set(next(iter(brd.get(row=8, col=1)))) == a - b
     assert set(next(iter(brd.get(row=5, col=4)))) == a - b
@@ -228,7 +228,7 @@ def test_board_solve_swordfish():
         [z, z, z, z, a, z, z, z, z],
     ])
 
-    brd.solve(strategies={Board.SWORDFISH})
+    Solver.solve(brd, strategies={Solver.SWORDFISH})
 
     assert set(next(iter(brd.get(row=5, col=1)))) == a - b
     assert set(next(iter(brd.get(row=8, col=4)))) == a - b
@@ -255,7 +255,7 @@ def test_board_solve_xywing():
         [a, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYWING})
+    Solver.solve(brd, strategies={Solver.XYWING})
 
     ers = brd.get(row=0, col=0)
     eas = brd.get(row=8) | brd.get(col=0) | brd.get(box=6)
@@ -275,7 +275,7 @@ def test_board_solve_xywing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYWING})
+    Solver.solve(brd, strategies={Solver.XYWING})
 
     ers = brd.get(row=0, col=3)
     eas = brd.get(row=2) | brd.get(col=0) | brd.get(box=3)
@@ -295,7 +295,7 @@ def test_board_solve_xywing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYWING})
+    Solver.solve(brd, strategies={Solver.XYWING})
 
     ers = brd.get(row=0, col=2)
     eas = brd.get(row=0) | brd.get(col=0) | brd.get(box=0)
@@ -325,7 +325,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYZWING})
+    Solver.solve(brd, strategies={Solver.XYZWING})
 
     ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
     eas = (brd.get(row=2) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=2, col=0, box=0)
@@ -345,7 +345,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYZWING})
+    Solver.solve(brd, strategies={Solver.XYZWING})
 
     ers = (brd.get(row=0) | brd.get(col=6) | brd.get(box=2)) - brd.get(row=0, col=6, box=2)
     eas = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
@@ -365,7 +365,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    brd.solve(strategies={Board.XYZWING})
+    Solver.solve(brd, strategies={Solver.XYZWING})
 
     ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
     eas = (brd.get(row=0) | brd.get(col=2) | brd.get(box=0)) - brd.get(row=0, col=2, box=0)

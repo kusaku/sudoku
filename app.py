@@ -1,5 +1,4 @@
 import operator
-import random
 from collections import Counter, defaultdict
 from functools import reduce
 from itertools import chain
@@ -147,14 +146,6 @@ class Box(Unit):
 
 
 class Board(Atom):
-    NAKED_TUPLES = 1
-    HIDDEN_TUPLES = 2
-    INTERSECTIONS = 3
-    XWING = 4
-    XYWING = 5
-    XYZWING = 6
-    SWORDFISH = 7
-
     def __init__(self, initial=None):
         self.rows = defaultdict(set)
         self.cols = defaultdict(set)
@@ -242,104 +233,116 @@ class Board(Atom):
     def box(self, num):
         return Box(self.boxs[num])
 
-    def solve_naked_tuples(self):
+    def solved(self):
+        return all(e.ready for e in self)
+
+    def failed(self):
+        return any(e.empty for e in self)
+
+    def check(self):
+        c = Counter(chain(*self))
+        return all(v == self.RANK for v in c.values())
+
+
+class Solver:
+    def solve_naked_tuples(brd):
         changed = False
         loop_changed = True
         while loop_changed:
             loop_changed = False
-            for num in range(self.RANK):
-                loop_changed |= self.box(num).naked_tuples()
-                loop_changed |= self.row(num).naked_tuples()
-                loop_changed |= self.col(num).naked_tuples()
+            for num in range(brd.RANK):
+                loop_changed |= brd.box(num).naked_tuples()
+                loop_changed |= brd.row(num).naked_tuples()
+                loop_changed |= brd.col(num).naked_tuples()
             changed |= loop_changed
         return changed
 
-    def solve_hidden_tuples(self):
+    def solve_hidden_tuples(brd):
         changed = False
         loop_changed = True
         while loop_changed:
             loop_changed = False
-            for num in range(self.RANK):
-                loop_changed |= self.box(num).hidden_tuples()
-                loop_changed |= self.row(num).hidden_tuples()
-                loop_changed |= self.col(num).hidden_tuples()
+            for num in range(brd.RANK):
+                loop_changed |= brd.box(num).hidden_tuples()
+                loop_changed |= brd.row(num).hidden_tuples()
+                loop_changed |= brd.col(num).hidden_tuples()
             changed |= loop_changed
         return changed
 
-    def solve_intersections(self):
+    def solve_intersections(brr):
         changed = False
         loop_changed = True
         while loop_changed:
             loop_changed = False
-            for b in range(self.RANK):
-                box = self.box(b)
+            for b in range(brr.RANK):
+                box = brr.box(b)
                 for num in {e.row for e in box}:
-                    loop_changed |= box.intersections(self.row(num))
+                    loop_changed |= box.intersections(brr.row(num))
                 for num in {e.col for e in box}:
-                    loop_changed |= box.intersections(self.col(num))
+                    loop_changed |= box.intersections(brr.col(num))
             changed |= loop_changed
         return changed
 
-    def solve_x_wing(self):
+    def solve_x_wing(brd):
         changed = False
         f = lambda items: {
             v: set(e for e in items if v in e)
             for v, count in Counter(chain(*items)).items()
             if count == 2
         }
-        for num1 in range(self.RANK - 1):
-            row1 = f(self.row(num1))
-            col1 = f(self.col(num1))
-            for num2 in range(num1 + 1, self.RANK):
-                row2 = f(self.row(num2))
-                col2 = f(self.col(num2))
+        for num1 in range(brd.RANK - 1):
+            row1 = f(brd.row(num1))
+            col1 = f(brd.col(num1))
+            for num2 in range(num1 + 1, brd.RANK):
+                row2 = f(brd.row(num2))
+                col2 = f(brd.col(num2))
                 for v in row1.keys() & row2.keys():
                     cols = {e.col for e in row1[v]} & {e.col for e in row2[v]}
                     if len(cols) == 2:
                         for c in cols:
-                            for e in self.col(c) - row1[v] - row2[v]:
+                            for e in brd.col(c) - row1[v] - row2[v]:
                                 changed |= e.exclude({v})
                 for v in col1.keys() & col2.keys():
                     rows = {e.row for e in col1[v]} & {e.row for e in col2[v]}
                     if len(rows) == 2:
                         for r in rows:
-                            for e in self.row(r) - col1[v] - col2[v]:
+                            for e in brd.row(r) - col1[v] - col2[v]:
                                 changed |= e.exclude({v})
         return changed
 
-    def solve_swordfish(self):
+    def solve_swordfish(brd):
         changed = False
         f = lambda items: {
             v: set(e for e in items if v in e)
             for v, count in Counter(chain(*items)).items()
             if count in {2, 3}
         }
-        for num1 in range(self.RANK - 2):
-            row1 = f(self.row(num1))
-            col1 = f(self.col(num1))
-            for num2 in range(num1 + 1, self.RANK - 1):
-                row2 = f(self.row(num2))
-                col2 = f(self.col(num2))
-                for num3 in range(num2 + 1, self.RANK):
-                    row3 = f(self.row(num3))
-                    col3 = f(self.col(num3))
+        for num1 in range(brd.RANK - 2):
+            row1 = f(brd.row(num1))
+            col1 = f(brd.col(num1))
+            for num2 in range(num1 + 1, brd.RANK - 1):
+                row2 = f(brd.row(num2))
+                col2 = f(brd.col(num2))
+                for num3 in range(num2 + 1, brd.RANK):
+                    row3 = f(brd.row(num3))
+                    col3 = f(brd.col(num3))
                     for v in row1.keys() & row2.keys() & row3.keys():
                         cols = {e.col for e in row1[v]} | {e.col for e in row2[v]} | {e.col for e in row3[v]}
                         if len(cols) in {2, 3}:
                             for c in cols:
-                                for e in self.col(c) - row1[v] - row2[v] - row3[v]:
+                                for e in brd.col(c) - row1[v] - row2[v] - row3[v]:
                                     changed |= e.exclude({v})
                     for v in col1.keys() & col2.keys() & col3.keys():
                         rows = {e.row for e in col1[v]} | {e.row for e in col2[v]} | {e.row for e in col3[v]}
                         if len(rows) in {2, 3}:
                             for r in rows:
-                                for e in self.row(r) - col1[v] - col2[v] - col3[v]:
+                                for e in brd.row(r) - col1[v] - col2[v] - col3[v]:
                                     changed |= e.exclude({v})
         return changed
 
-    def solve_xy_wing(self):
+    def solve_xy_wing(brd):
         changed = False
-        es = {e for e in self if len(e) == 2}
+        es = {e for e in brd if len(e) == 2}
         graph = defaultdict(set)
         for e1 in es:
             for e2 in es:
@@ -352,28 +355,17 @@ class Board(Atom):
                 for e3 in es - seen:
                     v = e2 & e3
                     if len(v) == 1 and len(e1 & v) == 0 and e2.row != e3.row and e2.col != e3.col and e2.box != e3.box:
-                        # print({0}<-{1}->{2}.format(
-                        #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
-                        #     {0} at [{1},{2}][{3}].format(tuple(e1), e1.row, e1.col, e1.box),
-                        #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box),
-                        # ))
-                        e2cells = self.row(e2.row) | self.col(e2.col) | self.box(e2.box)
-                        e3cells = self.row(e3.row) | self.col(e3.col) | self.box(e3.box)
+                        e2cells = brd.row(e2.row) | brd.col(e2.col) | brd.box(e2.box)
+                        e3cells = brd.row(e3.row) | brd.col(e3.col) | brd.box(e3.box)
                         for e in e2cells & e3cells - {e2, e3}:
-                            # print(excluding {0} from {1} because it is on intersection of {2} and {3}.format(
-                            #     v,
-                            #     [{1}, {2}][{3}].format(tuple(e), e.row, e.col, e.box),
-                            #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
-                            #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box)
-                            # ))
                             changed |= e.exclude(v)
         return changed
 
-    def solve_xyz_wing(self):
+    def solve_xyz_wing(brd):
         changed = False
         graph = defaultdict(set)
-        for e1 in (e for e in self if len(e) == 3):
-            for e2 in (e for e in self if len(e) == 2):
+        for e1 in (e for e in brd if len(e) == 3):
+            for e2 in (e for e in brd if len(e) == 2):
                 if len(e1 & e2) == 2 and (e1.row == e2.row or e1.col == e2.col or e1.box == e2.box):
                     graph[e1].add(e2)
         for e1, es in graph.items():
@@ -383,158 +375,39 @@ class Board(Atom):
                 for e3 in es - seen:
                     v = e2 & e3
                     if len(v) == 1 and len(e1 | v) == 3:
-                        # print({0}<-{1}->{2}.format(
-                        #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
-                        #     {0} at [{1},{2}][{3}].format(tuple(e1), e1.row, e1.col, e1.box),
-                        #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box),
-                        # ))
-                        e1cells = self.row(e1.row) | self.col(e1.col) | self.box(e1.box)
-                        e2cells = self.row(e2.row) | self.col(e2.col) | self.box(e2.box)
-                        e3cells = self.row(e3.row) | self.col(e3.col) | self.box(e3.box)
+                        e1cells = brd.row(e1.row) | brd.col(e1.col) | brd.box(e1.box)
+                        e2cells = brd.row(e2.row) | brd.col(e2.col) | brd.box(e2.box)
+                        e3cells = brd.row(e3.row) | brd.col(e3.col) | brd.box(e3.box)
                         for e in e1cells & e2cells & e3cells - {e1, e2, e3}:
-                            # print(excluding {0} from {1} because it is on intersection of {2} and {3}.format(
-                            #     v,
-                            #     [{1}, {2}][{3}].format(tuple(e), e.row, e.col, e.box),
-                            #     {0} at [{1},{2}][{3}].format(tuple(e2), e2.row, e2.col, e2.box),
-                            #     {0} at [{1},{2}][{3}].format(tuple(e3), e3.row, e3.col, e3.box)
-                            # ))
                             changed |= e.exclude(v)
         return changed
 
-    def solve(self, strategies=None):
+    NAKED_TUPLES = 1
+    HIDDEN_TUPLES = 2
+    INTERSECTIONS = 3
+    XWING = 4
+    XYWING = 5
+    XYZWING = 6
+    SWORDFISH = 7
+
+    STRATEGIES = {
+        NAKED_TUPLES: solve_naked_tuples,
+        HIDDEN_TUPLES: solve_hidden_tuples,
+        INTERSECTIONS: solve_intersections,
+        XWING: solve_x_wing,
+        XYWING: solve_xy_wing,
+        XYZWING: solve_xyz_wing,
+        SWORDFISH: solve_swordfish,
+    }
+
+    @classmethod
+    def solve(cls, brd, strategies=None):
         if strategies is None:
-            strategies = {self.NAKED_TUPLES, self.HIDDEN_TUPLES, self.INTERSECTIONS, self.XWING, self.XYWING,
-                          self.XYZWING, self.SWORDFISH}
+            strategies = cls.STRATEGIES.keys()
         changed = True
         while changed:
             changed = False
 
-            if self.NAKED_TUPLES in strategies and not changed:
-                changed |= self.solve_naked_tuples()
-
-            if self.HIDDEN_TUPLES in strategies and not changed:
-                changed |= self.solve_hidden_tuples()
-
-            if self.INTERSECTIONS in strategies and not changed:
-                changed |= self.solve_intersections()
-
-            if self.XWING in strategies and not changed:
-                changed |= self.solve_x_wing()
-
-            if self.XYWING in strategies and not changed:
-                changed |= self.solve_xy_wing()
-
-            if self.XYZWING in strategies and not changed:
-                changed |= self.solve_xyz_wing()
-
-            if self.SWORDFISH in strategies and not changed:
-                changed |= self.solve_swordfish()
-
-    def solved(self):
-        return all(e.ready for e in self)
-
-    def failed(self):
-        return any(e.empty for e in self)
-
-    def check(self):
-        c = Counter(chain(*self))
-        return all(v == self.RANK for v in c.values())
-
-
-def simplify_q(q):
-    for r in range(9):
-        for c in range(9):
-            v = q[r][c]
-            if v == 0:
-                continue
-            try:
-                q[r][c] = 0
-                d = Board.from_array(q)
-                d.solve()
-                if not d.solved():
-                    raise Exception
-            except:
-                q[r][c] = v
-
-
-flag = False
-
-if __name__ == '__main__':
-
-    b = Board()
-    q = b.to_array()
-
-
-    def randomize_board(q, b):
-        # n = random.choice([0, 1, 2, 3, 5, 6, 7, 8])
-        # s = b.row(n)
-        try:
-            e = random.choice([e for e in b if not e.ready])
-            v = random.choice(list(e))
-        except:
-            print(e)
-            # print(v)
-            raise
-        e.intersect({v})
-        q[e.row][e.col] = v
-
-
-    while not b.solved():
-        randomize_board(q, b)
-        # print(b)
-        b.solve(strategies={Board.HIDDEN_TUPLES})
-
-    # b = Board.from_array([
-    #     [1, 0, 0, 6, 0, 2, 0, 7, 0],
-    #     [2, 6, 0, 9, 0, 0, 1, 0, 0],
-    #     [0, 0, 7, 0, 0, 0, 0, 0, 0],
-    #     [0, 8, 0, 4, 0, 0, 0, 0, 7],
-    #     [0, 7, 1, 3, 0, 8, 2, 5, 0],
-    #     [9, 0, 0, 0, 0, 7, 0, 1, 0],
-    #     [0, 0, 0, 0, 0, 0, 4, 0, 0],
-    #     [0, 0, 4, 0, 0, 6, 0, 2, 3],
-    #     [0, 2, 0, 1, 0, 4, 0, 0, 6],
-    # ])
-    #
-    # print(b)
-    # b.solve()
-    # print(repr(b.to_string()))
-    # print(b.solved(), b.check())
-    #
-    # print(b)
-    # print(repr(b.to_string()))
-    # print(b.solved(), b.check())
-    #
-    # b = Board.from_string(   5 fe    a 4 7  3     9c4g  d  f    6g3d152 ab a b2  d6 fec g3      f7 b      3d7  1   ga4b6 f  a g528 9c6ed 1  9 3 b6    4 2c  de ba      3   34c   fge  62  g2 f5  1   87 ea      3   9c      f2    a      d8 63  1   2     c9 db  5e        4    d   7f  8 )
-    # b.solve(True)
-    # print(b)
-
-    # # X-wing & XY-wing
-    # q = [
-    #     [1, 0, 0, 6, 0, 2, 0, 7, 0],
-    #     [2, 6, 0, 9, 0, 0, 1, 0, 0],
-    #     [0, 0, 7, 0, 0, 0, 0, 0, 0],
-    #     [0, 8, 0, 4, 0, 0, 0, 0, 7],
-    #     [0, 7, 1, 3, 0, 8, 2, 5, 0],
-    #     [9, 0, 0, 0, 0, 7, 0, 1, 0],
-    #     [0, 0, 0, 0, 0, 0, 4, 0, 0],
-    #     [0, 0, 4, 0, 0, 6, 0, 2, 3],
-    #     [0, 2, 0, 1, 0, 4, 0, 0, 6],
-    # ]
-    #
-    # a = Board.from_array(q)
-    # b = Board.from_array(q)
-    #
-    # b.solve()
-    #
-    # # while not b.solved():
-    # #     randomize_board(b)
-    # #     b.solve()
-    #
-    # # simplify_q(q)
-    #
-    # print(b.solved(), b.check())
-    # print(tabulate([[a, -->\n * 27, b]], tablefmt='plain'))
-    #
-    # print(repr(a.to_string()))
-    # print(repr(b.to_string()))
+            for strategy in strategies:
+                solve_method = cls.STRATEGIES[strategy]
+                changed |= solve_method(brd)
