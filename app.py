@@ -48,7 +48,7 @@ class Element(Atom):
         return hash((self.row, self.col, self.box))
 
     def __eq__(self, other):
-        return self.row, self.col, self.box == other.row, other.col, other.box
+        return (self.row, self.col, self.box) == (other.row, other.col, other.box)
 
     def __str__(self):
         s = ''
