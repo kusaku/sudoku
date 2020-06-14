@@ -1,8 +1,9 @@
-from app import Board, Solver
+import solver
+import sudoku
 
 
 def test_board_solved():
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -16,7 +17,7 @@ def test_board_solved():
 
     assert brd.solved() is False
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [8, 7, 0, 0, 0, 1, 4, 0, 0],
         [3, 0, 0, 2, 0, 4, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 9],
@@ -30,7 +31,7 @@ def test_board_solved():
 
     assert brd.solved() is False
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [1, 4, 7, 2, 5, 8, 3, 6, 9],
         [2, 5, 8, 3, 6, 9, 4, 7, 1],
         [3, 6, 9, 4, 7, 1, 5, 8, 2],
@@ -46,7 +47,7 @@ def test_board_solved():
 
 
 def test_board_check():
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [1, 4, 7, 2, 5, 8, 3, 6, 9],
         [2, 5, 8, 3, 6, 9, 4, 7, 1],
         [3, 6, 9, 4, 7, 1, 5, 8, 2],
@@ -60,7 +61,7 @@ def test_board_check():
 
     assert brd.check() is True
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [1, 4, 7, 2, 5, 8, 3, 6, 1],
         [2, 5, 8, 3, 6, 9, 4, 7, 1],
         [3, 6, 9, 4, 7, 1, 5, 8, 1],
@@ -76,7 +77,7 @@ def test_board_check():
 
 
 def test_board_solve_naked_tuples():
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [1, 4, 7, 2, 5, 8, 3, 6, 0],
         [2, 5, 8, 3, 6, 9, 4, 7, 0],
         [3, 6, 9, 4, 7, 1, 5, 8, 0],
@@ -88,7 +89,7 @@ def test_board_solve_naked_tuples():
         [9, 3, 6, 1, 4, 7, 2, 5, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.NAKED_TUPLES})
+    solver.solve(brd, strategies={solver.naked_tuples})
 
     assert brd.solved()
 
@@ -99,7 +100,7 @@ def test_board_solve_hidden_tuples():
     c = {7, 8, 9}
     z = {1, 2, 3, 4, 5, 6, 7, 8, 9}
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [z, a, a, b, b, b, c, c, c],
         [z, z, z, z, z, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
@@ -111,7 +112,7 @@ def test_board_solve_hidden_tuples():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.HIDDEN_TUPLES})
+    solver.solve(brd, strategies={solver.hidden_tuples})
 
     assert set(next(iter(brd.get(row=0, col=0)))) == z - (a | b | c)
 
@@ -121,7 +122,7 @@ def test_board_solve_intersections():
     b = {2, 3}
     z = set()
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [b, b, z, z, z, z, z, z, z],
         [b, a, z, z, z, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
@@ -133,7 +134,7 @@ def test_board_solve_intersections():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.INTERSECTIONS})
+    solver.solve(brd, strategies={solver.intersections})
 
     assert set(next(iter(brd.get(row=1, col=1)))) == a - b
 
@@ -143,7 +144,7 @@ def test_board_solve_xwing():
     b = {1, 2}
     z = set()
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [b, z, z, z, b, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
@@ -155,11 +156,11 @@ def test_board_solve_xwing():
         [a, z, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.XWING})
+    solver.solve(brd, strategies={solver.x_wing})
 
     assert set(next(iter(brd.get(row=8, col=0)))) == a - b
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [b, z, z, z, b, z, z, z, a],
         [z, z, z, z, z, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
@@ -171,12 +172,12 @@ def test_board_solve_xwing():
         [a, z, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.XWING})
+    solver.solve(brd, strategies={solver.x_wing})
 
     assert set(next(iter(brd.get(row=8, col=0)))) == a
     assert set(next(iter(brd.get(row=0, col=8)))) == a
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [b, z, z, z, b, z, z, z, a],
         [z, z, z, z, z, z, z, z, z],
         [z, z, z, z, z, z, z, z, z],
@@ -188,7 +189,7 @@ def test_board_solve_xwing():
         [z, z, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.XWING})
+    solver.solve(brd, strategies={solver.x_wing})
 
     assert set(next(iter(brd.get(row=0, col=8)))) == a - b
 
@@ -198,7 +199,7 @@ def test_board_solve_swordfish():
     b = {1, 2, 3}
     z = set()
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [z, z, z, z, z, z, z, a, z],
         [z, b, z, z, b, z, z, b, z],
         [z, z, z, z, z, z, z, z, z],
@@ -210,13 +211,13 @@ def test_board_solve_swordfish():
         [z, a, z, z, z, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.SWORDFISH})
+    solver.solve(brd, strategies={solver.swordfish})
 
     assert set(next(iter(brd.get(row=8, col=1)))) == a - b
     assert set(next(iter(brd.get(row=5, col=4)))) == a - b
     assert set(next(iter(brd.get(row=0, col=7)))) == a - b
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [z, z, z, z, z, z, z, a, z],
         [z, b, z, z, z, z, z, b, z],
         [z, z, z, z, z, z, z, z, z],
@@ -228,7 +229,7 @@ def test_board_solve_swordfish():
         [z, z, z, z, a, z, z, z, z],
     ])
 
-    Solver.solve(brd, strategies={Solver.SWORDFISH})
+    solver.solve(brd, strategies={solver.swordfish})
 
     assert set(next(iter(brd.get(row=5, col=1)))) == a - b
     assert set(next(iter(brd.get(row=8, col=4)))) == a - b
@@ -243,7 +244,7 @@ def test_board_solve_xywing():
 
     assert len(r & a) == len(r & b) == len(a & b) == 1
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [r, 0, 0, 0, 0, 0, 0, 0, b],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -255,7 +256,7 @@ def test_board_solve_xywing():
         [a, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYWING})
+    solver.solve(brd, strategies={solver.xy_wing})
 
     ers = brd.get(row=0, col=0)
     eas = brd.get(row=8) | brd.get(col=0) | brd.get(box=6)
@@ -263,7 +264,7 @@ def test_board_solve_xywing():
 
     assert all(set(e) == c for e in eas & ebs - ers)
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [0, 0, r, 0, 0, b, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [a, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -275,7 +276,7 @@ def test_board_solve_xywing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYWING})
+    solver.solve(brd, strategies={solver.xy_wing})
 
     ers = brd.get(row=0, col=3)
     eas = brd.get(row=2) | brd.get(col=0) | brd.get(box=3)
@@ -283,7 +284,7 @@ def test_board_solve_xywing():
 
     assert all(set(e) == c for e in eas & ebs - ers)
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [a, 0, 0, r, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, b, 0, 0, 0],
@@ -295,7 +296,7 @@ def test_board_solve_xywing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYWING})
+    solver.solve(brd, strategies={solver.xy_wing})
 
     ers = brd.get(row=0, col=2)
     eas = brd.get(row=0) | brd.get(col=0) | brd.get(box=0)
@@ -313,7 +314,7 @@ def test_board_solve_xyzwing():
     assert len(r & a) == len(r & b) == 2
     assert len(a & b) == 1
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [r, 0, 0, 0, 0, 0, 0, 0, b],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [a, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -325,7 +326,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYZWING})
+    solver.solve(brd, strategies={solver.xyz_wing})
 
     ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
     eas = (brd.get(row=2) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=2, col=0, box=0)
@@ -333,7 +334,7 @@ def test_board_solve_xyzwing():
 
     assert all(set(e) == c for e in eas & ebs & ers)
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [a, 0, 0, 0, 0, 0, r, 0, b],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -345,7 +346,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYZWING})
+    solver.solve(brd, strategies={solver.xyz_wing})
 
     ers = (brd.get(row=0) | brd.get(col=6) | brd.get(box=2)) - brd.get(row=0, col=6, box=2)
     eas = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
@@ -353,7 +354,7 @@ def test_board_solve_xyzwing():
 
     assert all(set(e) == c for e in eas & ebs & ers)
 
-    brd = Board.from_array([
+    brd = sudoku.Board.from_array([
         [r, 0, a, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, b, 0, 0, 0, 0, 0, 0, 0],
@@ -365,7 +366,7 @@ def test_board_solve_xyzwing():
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
     ])
 
-    Solver.solve(brd, strategies={Solver.XYZWING})
+    solver.solve(brd, strategies={solver.xyz_wing})
 
     ers = (brd.get(row=0) | brd.get(col=0) | brd.get(box=0)) - brd.get(row=0, col=0, box=0)
     eas = (brd.get(row=0) | brd.get(col=2) | brd.get(box=0)) - brd.get(row=0, col=2, box=0)
@@ -377,14 +378,10 @@ def test_board_solve_xyzwing():
 # TODO: rewrite to synthetic test
 def test_board_solve_coloring():
     # https://www.sudokuwiki.org/sudoku.htm?bd=062900000004308000709000400600801000003000200000207003001000904000709300000004120
-    brd = Board.from_string('062900000004308000709000400600801000003000200000207003001000904000709300000004120')
+    brd = sudoku.Board.from_string('000000070000090810500203004800020000045000720000000003400308006072010000030000000')
 
-    Solver.solve(brd, strategies=Solver.STRATEGIES.keys() - {Solver.COLORING})
+    solver.solve(brd, strategies=solver.STRATEGIES - {solver.coloring})
     assert brd.solved() is False
 
-    Solver.solve(brd)
+    solver.solve(brd)
     assert brd.solved() is True
-
-
-if __name__ == '__main__':
-    test_board_solve_coloring()
