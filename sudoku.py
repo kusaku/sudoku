@@ -25,6 +25,10 @@ class Element(Atom):
     def ready(self):
         return len(self) == 1
 
+    @property
+    def empty(self):
+        return len(self) == 0
+
     def exclude(self, values):
         if set(self) != self.difference(values):
             self.difference_update(values)
@@ -42,6 +46,9 @@ class Element(Atom):
 
     def __eq__(self, other):
         return (self.row, self.col, self.box) == (other.row, other.col, other.box)
+
+    def __ne__(self, other):
+        return not self == other
 
     def __str__(self):
         s = ''

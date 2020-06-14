@@ -11,7 +11,7 @@ def _naked_tuples(unit):
         if count == len(v):
             vs = set(v)
             for e in unit:
-                if e != vs:
+                if set(e) != vs:
                     changed |= e.exclude(vs)
     return changed
 
@@ -204,28 +204,25 @@ def xyz_wing(brd):
 
 def coloring(brd):
     changed = False
-    # unsolved = {e for e in self if not e.ready}
-    unsolved = {e for e in brd}
-    vs = set(chain(*unsolved))
-    for v in vs:
-        es = {e for e in unsolved if v in e}
+    for v, es in ((v, {e for e in brd if v in e}) for v in set(chain(*brd))):
 
         def bilocation(e1, e2):
-            if e1 == e2:
-                return False
-            if e1.row == e2.row:
-                return {e1, e2} == es & brd.row(e1.row)
-            if e1.col == e2.col:
-                return {e1, e2} == es & brd.col(e1.col)
-            if e1.box == e2.box:
-                return {e1, e2} == es & brd.box(e1.box)
+            return (
+                e1 != e2 and
+                (
+                    e1.row == e2.row and es & brd.row(e1.row) == {e1, e2}
+                    or
+                    e1.col == e2.col and es & brd.col(e1.col) == {e1, e2}
+                    or
+                    e1.box == e2.box and es & brd.box(e1.box) == {e1, e2}
+                )
+            )
 
         graph = defaultdict(set)
         for e1 in es:
             for e2 in es:
                 if bilocation(e1, e2):
                     graph[e1].add(e2)
-                    graph[e2].add(e1)
         seen = set()
         while graph.keys() - seen:
             a, b = set(), set()
