@@ -251,6 +251,15 @@ def coloring(brd):
     return changed
 
 
+naked_tuples.merit = 1
+hidden_tuples.merit = 2
+intersections.merit = 3
+x_wing.merit = 4
+xy_wing.merit = 5
+xyz_wing.merit = 6
+swordfish.merit = 7
+coloring.merit = 9
+
 STRATEGIES = {
     naked_tuples,
     hidden_tuples,
@@ -267,5 +276,5 @@ def solve(brd, strategies=STRATEGIES):
     changed = True
     while changed:
         changed = False
-        for strategy in strategies:
+        for strategy in sorted(strategies, key=lambda x: x.merit):
             changed |= strategy(brd)
