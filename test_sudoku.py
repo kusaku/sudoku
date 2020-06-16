@@ -2,6 +2,188 @@ import solver
 import sudoku
 
 
+def test_box_display():
+    brd = sudoku.Board.from_array([
+        [1, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 2, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 3, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 4, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 5, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 6, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 7, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 8, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 9],
+    ])
+
+    brd_str = (
+        '| ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| ║ 1 ║ | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | ║ 2 ║ | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | ║ 3 ║ | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | ║ 4 ║ | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | ║ 5 ║ | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | ║ 6 ║ | 4 5 6 | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | ║ 7 ║ | 4 5 6 | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ | 1 2 3 |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | ║ 8 ║ | 4 5 6 |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ | 7 8 9 |\n'
+        '| 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | 1 2 3 | ╔═══╗ |\n'
+        '| 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | 4 5 6 | ║ 9 ║ |\n'
+        '| 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | 7 8 9 | ╚═══╝ |\n'
+    )
+
+    assert str(brd) == brd_str
+
+
+def test_unit_display():
+    sudoku.Element(row=0, col=0, box=0, initial=set({1}))
+
+    row = sudoku.Row({
+        sudoku.Element(row=0, col=0, box=0, initial=set({1})),
+        sudoku.Element(row=0, col=1, box=0, initial=set({2})),
+        sudoku.Element(row=0, col=2, box=0, initial=set({3})),
+        sudoku.Element(row=0, col=3, box=1, initial=set({4})),
+        sudoku.Element(row=0, col=4, box=1, initial=set({5})),
+        sudoku.Element(row=0, col=5, box=1, initial=set({6})),
+        sudoku.Element(row=0, col=6, box=2, initial=set({7})),
+        sudoku.Element(row=0, col=7, box=2, initial=set({8})),
+        sudoku.Element(row=0, col=8, box=2, initial=set({9})),
+    })
+
+    row_str = (
+        '| ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ | ╔═══╗ |\n'
+        '| ║ 1 ║ | ║ 2 ║ | ║ 3 ║ | ║ 4 ║ | ║ 5 ║ | ║ 6 ║ | ║ 7 ║ | ║ 8 ║ | ║ 9 ║ |\n'
+        '| ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ | ╚═══╝ |\n'
+    )
+
+    assert str(row) == row_str
+
+    col = sudoku.Col({
+        sudoku.Element(row=0, col=0, box=0, initial=set({1})),
+        sudoku.Element(row=1, col=0, box=0, initial=set({2})),
+        sudoku.Element(row=2, col=0, box=0, initial=set({3})),
+        sudoku.Element(row=3, col=0, box=3, initial=set({4})),
+        sudoku.Element(row=4, col=0, box=3, initial=set({5})),
+        sudoku.Element(row=5, col=0, box=3, initial=set({6})),
+        sudoku.Element(row=6, col=0, box=6, initial=set({7})),
+        sudoku.Element(row=7, col=0, box=6, initial=set({8})),
+        sudoku.Element(row=8, col=0, box=6, initial=set({9})),
+    })
+
+    col_str = (
+        '| ╔═══╗ |\n'
+        '| ║ 1 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 2 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 3 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 4 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 5 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 6 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 7 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 8 ║ |\n'
+        '| ╚═══╝ |\n'
+        '| ╔═══╗ |\n'
+        '| ║ 9 ║ |\n'
+        '| ╚═══╝ |\n'
+    )
+
+    assert str(col) == col_str
+
+    box = sudoku.Box({
+        sudoku.Element(row=0, col=0, box=0, initial=set({1})),
+        sudoku.Element(row=0, col=1, box=0, initial=set({2})),
+        sudoku.Element(row=0, col=2, box=0, initial=set({3})),
+        sudoku.Element(row=1, col=0, box=0, initial=set({4})),
+        sudoku.Element(row=1, col=1, box=0, initial=set({5})),
+        sudoku.Element(row=1, col=2, box=0, initial=set({6})),
+        sudoku.Element(row=2, col=0, box=0, initial=set({7})),
+        sudoku.Element(row=2, col=1, box=0, initial=set({8})),
+        sudoku.Element(row=2, col=2, box=0, initial=set({9})),
+    })
+
+    box_str = (
+        '| ╔═══╗ | ╔═══╗ | ╔═══╗ |\n'
+        '| ║ 1 ║ | ║ 2 ║ | ║ 3 ║ |\n'
+        '| ╚═══╝ | ╚═══╝ | ╚═══╝ |\n'
+        '| ╔═══╗ | ╔═══╗ | ╔═══╗ |\n'
+        '| ║ 4 ║ | ║ 5 ║ | ║ 6 ║ |\n'
+        '| ╚═══╝ | ╚═══╝ | ╚═══╝ |\n'
+        '| ╔═══╗ | ╔═══╗ | ╔═══╗ |\n'
+        '| ║ 7 ║ | ║ 8 ║ | ║ 9 ║ |\n'
+        '| ╚═══╝ | ╚═══╝ | ╚═══╝ |\n'
+    )
+
+    assert str(box) == box_str
+
+
+def test_element_display():
+    empty = sudoku.Element(row=0, col=0, box=0, initial=set())
+
+    empty_str = (
+        'X X X\n'
+        'X X X\n'
+        'X X X\n'
+    )
+
+    assert str(empty) == empty_str
+
+    full = sudoku.Element(row=0, col=0, box=0, initial={1, 2, 3, 4, 5, 6, 7, 8, 9})
+
+    full_str = (
+        '1 2 3\n'
+        '4 5 6\n'
+        '7 8 9\n'
+    )
+
+    assert str(full) == full_str
+
+    partial = sudoku.Element(row=0, col=0, box=0, initial={1, 3, 5, 7, 9})
+
+    partial_str = (
+        '1 . 3\n'
+        '. 5 .\n'
+        '7 . 9\n'
+    )
+
+    assert str(partial) == partial_str
+
+    single = sudoku.Element(row=0, col=0, box=0, initial={5})
+
+    single_str = (
+        '╔═══╗\n'
+        '║ 5 ║\n'
+        '╚═══╝\n'
+    )
+
+    assert str(single) == single_str
+
+
 def test_board_solved():
     brd = sudoku.Board.from_array([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -385,3 +567,13 @@ def test_board_solve_coloring():
 
     solver.solve(brd)
     assert brd.solved() is True
+
+# if __name__ == '__main__':
+#     brd = sudoku.Board.from_string('000000070000090810500203004800020000045000720000000003400308006072010000030000000')
+#     solver.solve(brd, strategies=solver.STRATEGIES - {solver.coloring})
+#     print(brd)
+#     print()
+#     solver.solve(brd)
+#     print(brd)
+#     print()
+#     assert brd.solved() is True

@@ -53,21 +53,19 @@ class Element(Atom):
     def __str__(self):
         s = ''
         if self.ready:
-            s += '╔═══╗\n║ %s ║\n╚═══╝' % next(iter(self))
+            s += '╔═══╗\n║ %s ║\n╚═══╝\n' % next(iter(self))
         elif self.empty:
-            s = 'X X X\nX X X\nX X X'
+            s = 'X X X\nX X X\nX X X\n'
         else:
-            # s = '...\n...\n...'
-            for i, v in enumerate(self.VALUES):
+            for i, v in enumerate(self.VALUES, start=1):
                 if v in self:
                     s += str(v)
                 else:
                     s += '.'
-                if (i + 1) % self.ORDER == 0:
+                if i % self.ORDER == 0:
                     s += '\n'
                 else:
                     s += ' '
-
         return s
 
     def __repr__(self):
@@ -85,21 +83,23 @@ class Row(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.col)
-        return tabulate([table], tablefmt='orgtbl')
+        return tabulate([table], tablefmt='orgtbl') + '\n'
 
 
 class Col(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.row)
-        return tabulate([[e] for e in table], tablefmt='orgtbl')
+        return tabulate([[e] for e in table], tablefmt='orgtbl') + '\n'
 
 
 class Box(Unit):
 
     def __str__(self):
         table = sorted(self, key=lambda e: e.row * self.RANK + e.col)
-        return tabulate([[table[r * self.ORDER + c] for c in range(self.ORDER)] for r in range(3)], tablefmt='orgtbl')
+        return tabulate(
+            [[table[r * self.ORDER + c] for c in range(self.ORDER)] for r in range(3)], tablefmt='orgtbl'
+        ) + '\n'
 
 
 class Board(Atom):
@@ -165,7 +165,7 @@ class Board(Atom):
         )
 
     def __str__(self):
-        return tabulate([[str(self.row(r))] for r in range(self.RANK)], tablefmt='plain')
+        return tabulate([[str(self.row(r))] for r in range(self.RANK)], tablefmt='plain') + '\n'
 
     def get(self, row=None, col=None, box=None):
         es = set(self)
