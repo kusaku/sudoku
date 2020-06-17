@@ -160,7 +160,7 @@ class Board(Atom):
 
     def to_string(self):
         return ''.join(
-            str(next(iter(e))) if e.ready else ' '
+            str(next(iter(e))) if e.ready else '0'
             for e in sorted(self, key=lambda e: e.row * self.RANK + e.col)
         )
 

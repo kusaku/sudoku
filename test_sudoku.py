@@ -184,6 +184,26 @@ def test_element_display():
     assert str(single) == single_str
 
 
+def test_board_load_save():
+    arr_sample = [
+        [0, 0, 0, 0, 0, 0, 0, 7, 0],
+        [0, 0, 0, 0, 9, 0, 8, 1, 0],
+        [5, 0, 0, 2, 0, 3, 0, 0, 4],
+        [8, 0, 0, 0, 2, 0, 0, 0, 0],
+        [0, 4, 5, 0, 0, 0, 7, 2, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 3],
+        [4, 0, 0, 3, 0, 8, 0, 0, 6],
+        [0, 7, 2, 0, 1, 0, 0, 0, 0],
+        [0, 3, 0, 0, 0, 0, 0, 0, 0]
+    ]
+
+    str_sample = '000000070000090810500203004800020000045000720000000003400308006072010000030000000'
+
+    assert sudoku.Board.from_array(arr_sample).to_string() == str_sample
+
+    assert sudoku.Board.from_string(str_sample).to_array() == arr_sample
+
+
 def test_board_solved():
     brd = sudoku.Board.from_array([
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -568,12 +588,6 @@ def test_board_solve_coloring():
     solver.solve(brd)
     assert brd.solved() is True
 
-# if __name__ == '__main__':
-#     brd = sudoku.Board.from_string('000000070000090810500203004800020000045000720000000003400308006072010000030000000')
-#     solver.solve(brd, strategies=solver.STRATEGIES - {solver.coloring})
-#     print(brd)
-#     print()
-#     solver.solve(brd)
-#     print(brd)
-#     print()
-#     assert brd.solved() is True
+
+if __name__ == '__main__':
+    test_board_load_save()
